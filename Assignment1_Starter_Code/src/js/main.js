@@ -7,7 +7,9 @@ Assignment 1
 "use strict";
 (function(){
   let
-      particles = [], particle = { position:[0,0], velocity:{x:0,y:0}, forces: {x:0,y:0}, mass: 1.0, radius: 50.0 },
+      particles = [],
+      particle = { position:[0,0], velocity:{x:0,y:0}, forces: {x:0,y:0}, mass: 1.0, radius: 50.0,
+        motion: true, collision: false, deformation : 0 },
       canvas, ctx, animation_then, calculate_then;
 
   let objects = [{
@@ -40,7 +42,12 @@ Assignment 1
   function derivativeEval(dt) {
     /* iterate over each particle */
     particles.forEach(function(p){
-      Integration.euler_step(p, dt);
+      if(p.motion){
+        /* Iterate over every object and check for collisions */
+        Utilities.Model_Utils.checkForIntersections(p, objects);
+        /* Integrate */
+        Integration.euler_step(p, dt);
+      }
     });
   }
 

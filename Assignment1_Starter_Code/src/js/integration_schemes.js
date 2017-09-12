@@ -6,9 +6,20 @@ Assignment 1
 */
 "use strict";
 
+const FLOOR_DAMPENING  = 0.8,
+      DRAG_COEFFICIENT = 0.47;
+
+
 /* Constant Forces */
-const GRAVITY = {x:0.0, y:-9.8};
+const GRAVITY = function(){return {x:0.0, y:-9.8 * Y_UP}},
+
+  AIR_FRICTION = function(velocity) {
+        return Utilities.Vector_Utils.multiply(velocity, DRAG_COEFFICIENT);
+};
+
 const CONSTANT_FORCES = [GRAVITY];
+const VARIABLE_FORCES = [AIR_FRICTION];
+
 const Y_UP = -1.0;
 
 const Integration = function(){
@@ -20,7 +31,11 @@ const Integration = function(){
       Utilities.Vector_Utils.zero(p.forces);
       /* Accumulate the constant forces */
       CONSTANT_FORCES.forEach(function(f){
-        p.forces = Utilities.Vector_Utils.add(p.forces, f)
+        p.forces = Utilities.Vector_Utils.add(p.forces, f(p))
+      });
+
+      VARIABLE_FORCES.forEach(function(f){
+        p.forces = Utilities.Vector_Utils.add(p.forces, f(p.velocity))
       });
     }
 
@@ -40,7 +55,7 @@ const Integration = function(){
     /* Calculate the acceleration */
     let acceleration = Utilities.Vector_Utils.divide(p.forces, p.mass);
     /* Orient the up vector */
-    acceleration.y *= Y_UP;
+    // acceleration.y *= Y_UP;
     /* Update the velocity and position */
     calculateVelocityAndPosition(acceleration);
   }
