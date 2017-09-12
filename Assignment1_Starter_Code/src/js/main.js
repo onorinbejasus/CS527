@@ -1,5 +1,11 @@
+/*
+Name: Timothy Luciani
+Class: CS527
+File: main.js
+Assignment 1
+*/
+"use strict";
 (function(){
-
   let
       particles = [], particle = { position:[0,0], velocity:{u:0,v:0}, forces: {x:0,y:0}, mass: 1.0, radius: 1.0 },
       canvas, ctx, animation_then, calculate_then;

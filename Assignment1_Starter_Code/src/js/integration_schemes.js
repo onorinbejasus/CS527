@@ -1,4 +1,11 @@
+/*
+Name: Timothy Luciani
+Class: CS527
+File: integration_schemes.js
+Assignment 1
+*/
 "use strict";
+
 /* Constant Forces */
 const GRAVITY = {x:0.0, y:-9.8};
 const CONSTANT_FORCES = [GRAVITY];
