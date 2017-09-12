@@ -7,11 +7,11 @@ Assignment 1
 "use strict";
 (function(){
   let
-      particles = [], particle = { position:[0,0], velocity:{u:0,v:0}, forces: {x:0,y:0}, mass: 1.0, radius: 1.0 },
+      particles = [], particle = { position:[0,0], velocity:{x:0,y:0}, forces: {x:0,y:0}, mass: 1.0, radius: 50.0 },
       canvas, ctx, animation_then, calculate_then;
 
   let objects = [{
-    name: "floor", position: {x:0, y:1000}
+    name: "floor", type: "wall", position: {x:0, y:1000}, normal: {x: 0, y:1}
   }];
 
   let animation_count = 0,
@@ -21,17 +21,9 @@ Assignment 1
     /* Clone the particle template */
     let p = _.cloneDeep(particle);
     /* Set initial positions */
-    p.position.x = e.x;
-    p.position.y = e.y;
+    p.position = {x:e.x, y:e.y};
     /* Add the particle to the list */
     particles.push(p);
-  }
-
-  function derivativeEval(dt) {
-    /* iterate over each particle */
-    particles.forEach(function(p){
-      Integration.euler_step(p, dt);
-    });
   }
 
   function render(){
@@ -39,9 +31,16 @@ Assignment 1
     /* iterate over each particle and render them to the screen */
     particles.forEach(function(p){
       ctx.beginPath();
-      ctx.arc(p.position.x, p.position.y, 50, 0, 2 * Math.PI, false);
+      ctx.arc(p.position.x, p.position.y, p.radius, 0, 2 * Math.PI, false);
       ctx.fillStyle = "rgb(255, 0, 0)";
       ctx.fill();
+    });
+  }
+
+  function derivativeEval(dt) {
+    /* iterate over each particle */
+    particles.forEach(function(p){
+      Integration.euler_step(p, dt);
     });
   }
 
@@ -82,6 +81,7 @@ Assignment 1
       render();
     }
   }
+
   /* Start animating at a certain fps */
   function setAnimationIntervals(fps,cb) {
     animation_then = calculate_then = Date.now();

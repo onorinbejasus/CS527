@@ -17,23 +17,20 @@ const Integration = function(){
 
     function clearAndAccumulateForces() {
       /* Clear the previous forces */
-      p.forces.x = 0;
-      p.forces.y = 0;
+      Utilities.Vector_Utils.zero(p.forces);
       /* Accumulate the constant forces */
       CONSTANT_FORCES.forEach(function(f){
-        p.forces.x += f.x;
-        p.forces.y += f.y;
+        p.forces = Utilities.Vector_Utils.add(p.forces, f)
       });
     }
 
     function calculateVelocityAndPosition(acceleration) {
       /* Calculate the new velocity */
-      let d_v = {
-        u : p.velocity.u + acceleration.x * dt,
-        v : p.velocity.v + acceleration.y * dt
-      };
+      let d_v = Utilities.Vector_Utils.add(p.velocity, Utilities.Vector_Utils.multiply(acceleration, dt));
       /* Use the new and previous velocity to calculate the new position */
-      p.position = {x:p.position.x + 0.5*(p.velocity.u + d_v.u)*dt, y:p.position.y + 0.5*(p.velocity.v + d_v.v)*dt};
+      p.position =
+          Utilities.Vector_Utils.add(p.position,
+            Utilities.Vector_Utils.multiply( Utilities.Vector_Utils.add(p.velocity, d_v), dt*0.5));
       /* Set the new velocity */
       p.velocity = d_v;
     }
@@ -41,7 +38,9 @@ const Integration = function(){
     /* Accumulate the forces on the particle */
     clearAndAccumulateForces();
     /* Calculate the acceleration */
-    let acceleration = { x : p.forces.x / dt, y: p.forces.y / dt * Y_UP};
+    let acceleration = Utilities.Vector_Utils.divide(p.forces, p.mass);
+    /* Orient the up vector */
+    acceleration.y *= Y_UP;
     /* Update the velocity and position */
     calculateVelocityAndPosition(acceleration);
   }
