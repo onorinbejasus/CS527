@@ -9,3 +9,7 @@
     top: 50%;
     transform: translateY(-50%);
 }
+
+#particleCanvas {
+    background-color: #EEEEEE;
+}

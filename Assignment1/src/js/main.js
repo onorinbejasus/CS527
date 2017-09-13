@@ -19,6 +19,8 @@ Assignment 1
   let animation_count = 0,
       computation_count = 0;
 
+  let motion_blur = false;
+
   function mouseClickCB(e) {
     /* Clone the particle template */
     let p = _.cloneDeep(particle);
@@ -29,9 +31,17 @@ Assignment 1
   }
 
   function render(){
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    ctx.fillStyle = "#EEEEEE";
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+
+    if(motion_blur){
+      ctx.fillStyle = "rgba(238,238,238,0.4)";
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+    }
+    else {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+    }
+
+
 
     /* iterate over each particle and render them to the screen */
     particles.forEach(function(p){
@@ -39,15 +49,17 @@ Assignment 1
       /* Save the context state*/
       ctx.save();
 
-      /* If a collision occurred, deform the ball */
+      ctx.translate(p.position.x, p.position.y);
+/*
+      /!* If a collision occurred, deform the ball *!/
       if(p.collision) {
         ctx.translate(p.position.x, p.position.y - p.deformation);
         p.collision = false;
       }
       else {
-        /* Translate the ball to it's position */
+        /!* Translate the ball to it's position *!/
         ctx.translate(p.position.x, p.position.y);
-      }
+      }*/
 
       /* Scale to deform the ball on impact */
       //ctx.scale(1.0/(p.deformation/50.0), 1.0);
@@ -159,6 +171,16 @@ Assignment 1
           });
         })
     );
+
+    /* Motion Blur selection */
+    $('input[name=blur]').click(function() {
+      if($('input[name=blur]:checked').val() === "On") {
+        motion_blur = true;
+      }
+      else {
+        motion_blur = flase;
+      }
+    });
   }
 
   function initialize() {
