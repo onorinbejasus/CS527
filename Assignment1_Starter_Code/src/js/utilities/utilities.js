@@ -7,6 +7,7 @@ Assignment 1
 "use strict";
 const Utilities = function(){
 
+  const FLOOR_DAMPENING  = 0.7;
   let epsilon = 0.01;
 
   return {
@@ -85,7 +86,7 @@ const Utilities = function(){
             /* Check for an intersection with any of the objects */
             objects.forEach(function(o){
 
-              let e = particle.radius / 2.0,
+              let e = particle.radius,
               c = Utilities.Vector_Utils.dot(
                 Utilities.Vector_Utils.subtract(particle.position, o.position),
                 Utilities.Vector_Utils.multiply_components(o.normal, {x:1, y:Y_UP})),
@@ -98,13 +99,15 @@ const Utilities = function(){
               if(c < e && v < 0) {
 
                 particle.collision = true;
-                particle.deformation = c;
+                particle.deformation = particle.radius - c + 0.1;
+                // particle.motion = false;
 
                 if(o.type === "wall") {
+                  /* Flip the tangent component on the velocity */
                   particle.velocity.y = -FLOOR_DAMPENING * particle.velocity.y;
+                  /* place the particle one radius above the object */
+                  particle.position.y = o.position.y - particle.radius;
                 }
-
-                // particle.motion = false;
               }
 
             });

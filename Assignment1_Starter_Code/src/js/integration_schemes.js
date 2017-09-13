@@ -6,56 +6,52 @@ Assignment 1
 */
 "use strict";
 
-const FLOOR_DAMPENING  = 0.8,
-      DRAG_COEFFICIENT = 0.47;
-
-
-/* Constant Forces */
-const GRAVITY = function(){return {x:0.0, y:-9.8 * Y_UP}},
-
-  AIR_FRICTION = function(velocity) {
-        return Utilities.Vector_Utils.multiply(velocity, DRAG_COEFFICIENT);
-};
-
-const CONSTANT_FORCES = [GRAVITY];
-const VARIABLE_FORCES = [AIR_FRICTION];
-
 const Y_UP = -1.0;
 
 const Integration = function(){
+
+  const DRAG_COEFFICIENT = 0.47, // dimensinless
+         AIR_DENSITY = 1.22; // kg/m^3
+
+  /* Constant Forces */
+  const GRAVITY = function(){return {x:0.0, y:-9.81 * Y_UP}},
+
+      AIR_FRICTION = function(particle) {
+        let area = Math.PI * particle.radius/100.0 * particle.radius/100.0, // convert to meters
+            coeff = -0.5 * DRAG_COEFFICIENT * area * AIR_DENSITY,
+            drag = ( particle.velocity.y === 0 ) ? 0 : coeff * particle.velocity.y * particle.velocity.y * particle.velocity.y / Math.abs(particle.velocity.y );
+        return {x:0, y: drag/particle.mass};
+      };
+
+  const CONSTANT_FORCES = [GRAVITY,AIR_FRICTION];
+
   /* Euler Integration */
   function euler(p,dt) {
 
     function clearAndAccumulateForces() {
       /* Clear the previous forces */
-      Utilities.Vector_Utils.zero(p.forces);
+      p.forces = Utilities.Vector_Utils.zero(p.forces);
       /* Accumulate the constant forces */
       CONSTANT_FORCES.forEach(function(f){
-        p.forces = Utilities.Vector_Utils.add(p.forces, f(p))
+       p.forces = Utilities.Vector_Utils.add(p.forces, f(p));
       });
-
-      VARIABLE_FORCES.forEach(function(f){
-        p.forces = Utilities.Vector_Utils.add(p.forces, f(p.velocity))
-      });
+      return p.forces;
     }
 
     function calculateVelocityAndPosition(acceleration) {
       /* Calculate the new velocity */
-      let d_v = Utilities.Vector_Utils.add(p.velocity, Utilities.Vector_Utils.multiply(acceleration, dt));
+      let d_v = Utilities.Vector_Utils.add(p.velocity, Utilities.Vector_Utils.multiply(acceleration, dt)),
       /* Use the new and previous velocity to calculate the new position */
-      p.position =
-          Utilities.Vector_Utils.add(p.position,
-            Utilities.Vector_Utils.multiply( Utilities.Vector_Utils.add(p.velocity, d_v), dt*0.5));
+        d_x =
+          Utilities.Vector_Utils.add(p.position, Utilities.Vector_Utils.multiply(d_v, dt * 100 /* Convert back to cm */));
       /* Set the new velocity */
       p.velocity = d_v;
+      /* convert back to cm */
+      p.position = d_x;
     }
 
-    /* Accumulate the forces on the particle */
-    clearAndAccumulateForces();
-    /* Calculate the acceleration */
-    let acceleration = Utilities.Vector_Utils.divide(p.forces, p.mass);
-    /* Orient the up vector */
-    // acceleration.y *= Y_UP;
+    /* Accumulate the forces on the particle and calculate the acceleration */
+    let acceleration = clearAndAccumulateForces();
     /* Update the velocity and position */
     calculateVelocityAndPosition(acceleration);
   }
