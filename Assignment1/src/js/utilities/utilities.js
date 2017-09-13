@@ -118,7 +118,7 @@ const Utilities = function(){
 
               /* Stop the particle if it is just resting on the bottom */
               if(o.name === "floor"){
-                if(Math.abs(Utilities.Vector_Utils.magnitude(particle.forces) - 9.81) < 0.1 &&
+                if(Math.abs(Utilities.Vector_Utils.magnitude(particle.forces) - 9.81) < 0.05 &&
                     Math.abs(o.position.y - particle.position.y) <= particle.radius
                 ){
                   particle.motion = false;
