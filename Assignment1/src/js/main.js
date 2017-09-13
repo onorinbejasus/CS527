@@ -10,7 +10,8 @@ Assignment 1
       particles = [],
       particle = { position:[0,0], velocity:{x:0,y:0}, forces: {x:0,y:0}, mass: 1.0/*kg*/, radius: 25.0/*cm*/,
         motion: true, collision: false, deformation : 50.0 },
-      canvas, ctx, animation_then, calculate_then;
+      canvas, ctx, animation_then, calculate_then,
+      background = "rgba(238,238,238,0.4)";
 
   let objects = [{
     name: "floor", type: "wall", position: {x:0, y:1000}, normal: {x: 0, y:1}
@@ -34,7 +35,7 @@ Assignment 1
 
 
     if(motion_blur){
-      ctx.fillStyle = "rgba(238,238,238,0.4)";
+      ctx.fillStyle = background;
       ctx.fillRect(0, 0, canvas.width, canvas.height);
     }
     else {
@@ -81,7 +82,7 @@ Assignment 1
     particles.forEach(function(p){
       if(p.motion){
         /* Integrate */
-        Integration.euler_step(p, dt);
+        Integration.euler_step(p, 1/40);
         /* Iterate over every object and check for collisions */
         Utilities.Model_Utils.checkForIntersections(p, objects);
         /* Check the deformation and bring it back to its normal scale */
@@ -147,12 +148,24 @@ Assignment 1
       switch($(this).text()){
         case 'Air':
           FLUID_DENSITY = 1.22;
+          background = "rgba(238,238,238,0.4)";
+          d3.select("#particleCanvas")
+              .attr("class", "")
+              .classed("background_air", true);
           break;
         case 'Water':
           FLUID_DENSITY = 1000;
+          background = "rgba(214, 234, 248,0.4)";
+          d3.select("#particleCanvas")
+              .attr("class", "")
+              .classed("background_water", true);
           break;
         case 'Mercury':
           FLUID_DENSITY = 13595;
+          background = "rgba(250, 219, 216,0.4)";
+          d3.select("#particleCanvas")
+              .attr("class", "")
+              .classed("background_mercury", true);
           break;
       }
     });

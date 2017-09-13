@@ -10,6 +10,14 @@
     transform: translateY(-50%);
 }
 
-#particleCanvas {
+.background_air{
     background-color: #EEEEEE;
+}
+
+.background_water{
+    background-color: #D6EAF8;
+}
+
+.background_mercury{
+    background-color: #FADBD8;
 }
