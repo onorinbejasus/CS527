@@ -178,7 +178,7 @@ Assignment 1
         motion_blur = true;
       }
       else {
-        motion_blur = flase;
+        motion_blur = false;
       }
     });
   }
