@@ -126,6 +126,10 @@ Assignment 1
 
   function setupCallbacks() {
     $(".btn-group > button.btn").on("click", function(){
+      /* Switch the active button highlight */
+      $(".btn-group > .btn").removeClass("active");
+      $(this).addClass("active");
+
       /* Switch on the different viscosity */
       /* Used this paper for the viscosity */
       switch($(this).text()){
