@@ -124,6 +124,39 @@ Assignment 1
     cb(1000.0 / fps);
   }
 
+  function setupCallbacks() {
+    $(".btn-group > button.btn").on("click", function(){
+      /* Switch on the different viscosity */
+      /* Used this paper for the viscosity */
+      switch($(this).text()){
+        case 'Air':
+          FLUID_DENSITY = 1.22;
+          break;
+        case 'Water':
+          FLUID_DENSITY = 1000;
+          break;
+        case 'Mercury':
+          FLUID_DENSITY = 13595;
+          break;
+      }
+    });
+
+    /* Change the mass of the particles  */
+    d3.select('#massSlider').call(
+        d3.slider()
+        .axis(d3.svg.axis().ticks(12)).min(1).max(50).step(1)
+        .on("slide", function(evt, value) {
+          d3.select('#massText').text("Mass: " + value);
+          /* Set the particles to a heavier mass */
+          let val = parseInt(value);
+          particle.mass = val;
+          particles.forEach(function(p){
+            p.mass = val;
+          });
+        })
+    );
+  }
+
   function initialize() {
     /* Setup the canvas */
     canvas = document.getElementById("particleCanvas");
@@ -136,6 +169,9 @@ Assignment 1
     setAnimationIntervals(128, calculateNextStep);
     /* Begin animation */
     setAnimationIntervals(64, animate);
+
+    setupCallbacks();
+
   }
 
   /* start the application once the DOM is ready */

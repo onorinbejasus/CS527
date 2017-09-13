@@ -8,17 +8,17 @@ Assignment 1
 
 const Y_UP = -1.0;
 
-const Integration = function(){
+let DRAG_COEFFICIENT = 0.47, // dimensionless
+    FLUID_DENSITY = 1.22; // kg/m^3
 
-  const DRAG_COEFFICIENT = 0.47, // dimensinless
-         AIR_DENSITY = 1.22; // kg/m^3
+const Integration = function(){
 
   /* Constant Forces */
   const GRAVITY = function(){return {x:0.0, y:-9.81 * Y_UP}},
 
       AIR_FRICTION = function(particle) {
         let area = Math.PI * particle.radius/100.0 * particle.radius/100.0, // convert to meters
-            coeff = -0.5 * DRAG_COEFFICIENT * area * AIR_DENSITY,
+            coeff = -0.5 * DRAG_COEFFICIENT * area * FLUID_DENSITY,
             drag = ( particle.velocity.y === 0 ) ? 0 : coeff * particle.velocity.y * particle.velocity.y * particle.velocity.y / Math.abs(particle.velocity.y );
         return {x:0, y: drag/particle.mass};
       };
