@@ -175,7 +175,7 @@ Assignment 1
         d3.slider()
         .axis(d3.svg.axis().ticks(12)).min(1).max(50).step(1)
         .on("slide", function(evt, value) {
-          d3.select('#massText').text("Mass: " + value);
+          d3.select('#massText').text("Mass: " + value+"kg");
           /* Set the particles to a heavier mass */
           let val = parseInt(value);
           particle.mass = val;
