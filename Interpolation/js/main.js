@@ -30,9 +30,9 @@
 
     // if enough time has elapsed, draw the next frame
     if (elapsed > interval && mesh) {
-      console.log(t);
-      let quaternion = new THREE.Quaternion(rotations[idx].x, rotations[idx].y, rotations[idx].z, 1.0);
-      mesh.quaternion.slerp(quaternion, 1.0-t);
+      let euler = new THREE.Euler(rotations[idx].x, rotations[idx].y, rotations[idx].z, "XYZ");
+      let quaternion = new THREE.Quaternion().setFromEuler(euler);
+      let q = mesh.quaternion.slerp(quaternion, 1.0-t);
 
       animation_count++;
       // Get ready for next frame by setting then=now, but...
@@ -83,8 +83,8 @@
         d3.json(file, function(error, data) {
           createGeometry(data.letter);
 
-          data.rotations.forEach(function(rot){
-            rotations.push({x:parseInt(rot.x),y:parseInt(rot.y),z:parseInt(rot.z)})
+          data.rotations.forEach(function(ts){
+            rotations.push({x:parseFloat(ts.rotation.x) * Math.PI/2.0,y:parseFloat(ts.rotation.y)* Math.PI/2.0,z:parseFloat(ts.rotation.z)* Math.PI/2.0})
           });
 
           /* start animation */
