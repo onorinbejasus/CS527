@@ -21,9 +21,7 @@
 
       let currentRot = mesh.rotation.toVector3(),
              nextRot = currentRot.lerp(euler.toVector3(), t);
-        // console.log(nextRot);
       mesh.rotation.setFromVector3(nextRot, euler.order);
-
     }
 
     /* based on the request animation example here: http://jsfiddle.net/m1erickson/CtsY3/*/
@@ -73,22 +71,31 @@
         controls.enableZoom = true;
     };
 
-    let createGeometry = function(letter) {
+    let createGeometry = function(letter, tempMesh, color, rotation, animated) {
         textLoader = new THREE.FontLoader();
-        textLoader.load( 'font/Georgia_Regular.json', function ( font ) {
+        textLoader.load( 'font/Georgia_Regular.json',  function ( font ) {
 
             geometry = new THREE.TextGeometry( letter, {
                 font: font,
-                size: 2,
-                height: 0.5,
+                size: 1,
+                height: 0.2,
                 curveSegments: 12
             } );
 
             // geometry = new THREE.BoxGeometry( 1, 1, 1 );
-            material = new THREE.MeshBasicMaterial( { color: 0x00ff00 } );
+            material = new THREE.MeshBasicMaterial( { color: color } );
+            tempMesh = new THREE.Mesh( geometry, material );
 
-            mesh = new THREE.Mesh( geometry, material );
-            scene.add( mesh );
+            if(rotation){
+                let euler = new THREE.Euler(rotation.x, rotation.y, rotation.z, "XYZ");
+                tempMesh.quaternion.setFromEuler(euler);
+            }
+
+            if(animated){
+                mesh = tempMesh;
+            }
+
+            scene.add( tempMesh );
         } );
 
     };
@@ -96,8 +103,9 @@
     let parseJSON = function(file) {
 
         d3.json(file, function(error, data) {
+          let tempMesh;
           /* Create the letter */
-          createGeometry(data.letter);
+          createGeometry(data.letter, mesh, 0x00ff00, null, true);
 
           /* Read the interpolation and rotations*/
           if(data.interpolation === "slerp") {
@@ -108,18 +116,23 @@
           }
 
           data.rotations.forEach(function(ts){
+              let rotation;
               if(ts.format === "radians"){
-                rotations.push({
-                  x: parseFloat(ts.rotation.x),
-                  y: parseFloat(ts.rotation.y),
-                  z: parseFloat(ts.rotation.z)})
+                  rotation = {
+                      x: parseFloat(ts.rotation.x),
+                      y: parseFloat(ts.rotation.y),
+                      z: parseFloat(ts.rotation.z)};
               }
               else{
-                rotations.push({
-                  x:parseFloat(ts.rotation.x) * Math.PI/2.0,
-                  y:parseFloat(ts.rotation.y)* Math.PI/2.0,
-                  z:parseFloat(ts.rotation.z)* Math.PI/2.0 })
+                  rotation = {
+                      x:parseFloat(ts.rotation.x) * Math.PI/2.0,
+                      y:parseFloat(ts.rotation.y)* Math.PI/2.0,
+                      z:parseFloat(ts.rotation.z)* Math.PI/2.0 };
               }
+
+              rotations.push(rotation);
+              createGeometry(data.letter, tempMesh, 0xffffff, rotation);
+
           });
 
           /* start animation */
@@ -141,7 +154,8 @@
 
     addControls();
 
-   parseJSON("models/gimble.json");
+   parseJSON("models/juans.json");
+   // parseJSON("models/gimble.json");
    // parseJSON("models/positions.json");
 
   /* keyboard */
