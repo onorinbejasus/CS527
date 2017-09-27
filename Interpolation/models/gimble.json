@@ -1,12 +1,13 @@
 {
-  "number": "3",
+  "number": "4",
   "letter": "B",
   "interpolation": "lerp",
-  "rotations": [{
+  "rotations": [
+    {
     "time": "0",
     "rotation": {
       "x": "0",
-      "y": "90",
+      "y": "0",
       "z": "0"
     },
     "format": "degrees",
@@ -15,18 +16,29 @@
     {
       "time": "1",
       "rotation": {
-        "x": "45",
-        "y": "0",
+        "x": "0",
+        "y": "90",
         "z": "0"
       },
+
       "format": "degrees",
       "order": "XYZ"
     },
     {
       "time": "2",
       "rotation": {
-        "x": "0",
-        "y": "0",
+        "x": "45",
+        "y": "90",
+        "z": "0"
+      },
+      "format": "degrees",
+      "order": "XYZ"
+    },
+    {
+      "time": "3",
+      "rotation": {
+        "x": "45",
+        "y": "90",
         "z": "45"
       },
       "format": "degrees",

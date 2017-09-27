@@ -21,7 +21,7 @@
 
       let currentRot = mesh.rotation.toVector3(),
              nextRot = currentRot.lerp(euler.toVector3(), t);
-
+        // console.log(nextRot);
       mesh.rotation.setFromVector3(nextRot, euler.order);
 
     }
