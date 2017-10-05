@@ -25,13 +25,6 @@
     let now = Date.now(),
         elapsed = now - animation_then;
 
-    // let delta = clock.getDelta();
-    // t = t + delta;
-    // if(t > 1){
-    //   t = t - 1;
-    //   idx++;
-    // }
-
     // increment the total time elapsed
     total_elapsed += elapsed;
 
@@ -44,6 +37,11 @@
       // Get ready for next frame by setting then=now
       animation_then = now - (elapsed % interval);
 
+      /* Find which frames we are between */
+      let timeIdx = _.find(times, function(time) { return time > total_elapsed/1e3; }),
+          idx = _.indexOf(times, timeIdx);
+      t = (now_milli-times[idx-1])/(timeIdx-times[idx-1]);
+      console.log(idx,t);
       let flag = false;
       /* Iterate over each bone and calculate the next location */
       skeletonHelper.skeleton.bones.forEach(function(bone){
@@ -52,13 +50,7 @@
         let bone_transforms = _.get(transformations, "bones["+bone.name+"]");
         if(!bone_transforms) return;
 
-        /* Find which frames we are between */
-        let timeIdx = _.find(times, function(time) { return time > total_elapsed/1e3; }),
-            idx = _.indexOf(times, timeIdx);
-        t = (now_milli-times[idx-1])/(timeIdx-times[idx-1]);
-
         if(idx > -1){
-
           let rotIdx = parseInt(Math.floor(idx/3));
 
           if(bone_transforms.translation){
@@ -119,7 +111,6 @@
           rotArr.push(
               new THREE.Quaternion(track.values[i],track.values[i+1],
                           track.values[i+2],track.values[i+3])
-                  //.normalize()
           );
         }
 
@@ -200,7 +191,7 @@
       scene.add( boneContainer );
 
     /* animate the scene */
-    setAnimationIntervals(30, animate)
+    setAnimationIntervals(60, animate)
   }
 
   function loadBVH(model) {
