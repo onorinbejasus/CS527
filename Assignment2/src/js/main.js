@@ -6,7 +6,7 @@
       transformations = {}, times = [],
       transformations_static = [],
       animation_then, animation_count = 0, total_elapsed = 0,
-      t = 0, idx = 1;
+      t = 0, idx = 0, flag = false, pause = false, iterate = false;
 
   let boneMap = {bones:{}};
 
@@ -19,11 +19,27 @@
     // request another frame
     requestAnimationFrame(animate.bind(null,interval));
 
+    // calculate elapsed time since last loop
     controls.update();
 
     // calculate elapsed time since last loop
     let now = Date.now(),
         elapsed = now - animation_then;
+
+    // Get ready for next frame by setting then=now
+    animation_then = now - (elapsed % interval);
+
+    /* allow */
+    if(iterate) {
+      pause = false;
+      console.log(idx, t);
+    }
+
+    /* pause the animation */
+    if(pause) {
+      render();
+      return;
+    }
 
     // increment the total time elapsed
     total_elapsed += elapsed;
@@ -34,15 +50,15 @@
     if (elapsed > interval) {
 
       animation_count++;
-      // Get ready for next frame by setting then=now
-      animation_then = now - (elapsed % interval);
 
       /* Find which frames we are between */
-      let timeIdx = _.find(times, function(time) { return time > total_elapsed/1e3; }),
-          idx = _.indexOf(times, timeIdx);
+      let timeIdx = _.find(times, function(time) {
+        return time > total_elapsed/1e3; });
+
+      idx = _.indexOf(times, timeIdx);
       t = (now_milli-times[idx-1])/(timeIdx-times[idx-1]);
-      console.log(idx,t);
-      let flag = false;
+
+      flag = false;
       /* Iterate over each bone and calculate the next location */
       skeletonHelper.skeleton.bones.forEach(function(bone){
         if(flag) return;
@@ -52,7 +68,6 @@
 
         if(idx > -1){
           let rotIdx = parseInt(Math.floor(idx/3));
-
           if(bone_transforms.translation){
             /* Get the rotation and translation */
             let trans  = bone_transforms.translation[idx],
@@ -68,14 +83,26 @@
           }
         }
         else {
-          setInitialSkeleton();
           total_elapsed = 0;
+          setInitialSkeleton();
           flag = true;
         }
       });
 
+      // //setInitialSkeleton();
+      // if(flag){
+      //   times = times.map(function(x) { return x += total_elapsed/1e3; });
+      //   _.toPairs(transformations).forEach(function(p){
+      //
+      //   });
+      // }
+
       /* Render the scene */
       render();
+      if(iterate) {
+        iterate = false;
+        pause = true;
+      }
     }
   }
 
@@ -147,7 +174,6 @@
         for(i = 0; i < track.values.length; i+=3){
           transArr.push(new THREE.Vector3(track.values[i],track.values[i+1],track.values[i+2]));
         }
-
         transformations[bone] = transformations[bone] || {};
         transformations[bone].translation = transArr;
       }
@@ -211,7 +237,7 @@
     });
 
     camera = new THREE.PerspectiveCamera( 60, window.innerWidth / window.innerHeight, 1, 10000 );
-    camera.position.set( 0, 200, 500 );
+    camera.position.set( 715, 390, 458 );
 
     controls = new THREE.OrbitControls( camera );
     controls.minDistance = 100;
@@ -245,5 +271,32 @@
 
   /* start the application once the DOM is ready */
   document.addEventListener('DOMContentLoaded', init);
+
+  /* keyboard */
+  document.addEventListener('keydown', (event) => {
+    const keyName = event.key;
+
+    if (keyName === 'Control') {
+      // do not alert when only Control key is pressed.
+      return;
+    }
+
+    switch(keyName){
+
+      case 's':
+      case 'S':
+        pause = true;
+        break;
+      case 'g':
+      case 'G':
+        pause = false;
+        break;
+      case 'i':
+      case 'I':
+        iterate = true;
+        break;
+    }
+
+  }, false);
 
 })();
