@@ -30,7 +30,7 @@ const Integration = function(){
       p.velocity.y = 0;
     }
 
-    return p.forces/p.mass;
+    return p.forces;
   }
 
   function calculateVelocityAndPosition(p, acceleration, dt) {
@@ -76,8 +76,6 @@ const Integration = function(){
   /* Runge-Kutta 4 Integration */
   function RK4(p,dt){
 
-    console.log(p);
-
     /* Accumulate the forces on the particle and calculate the acceleration */
     let acceleration = clearAndAccumulateForces(p);
 
@@ -86,33 +84,18 @@ const Integration = function(){
     let d_v1 = Utilities.Vector_Utils.add(p.velocity, Utilities.Vector_Utils.multiply(acceleration, dt)),
         k1 = Utilities.Vector_Utils.add(p.position, Utilities.Vector_Utils.multiply(d_v1, dt * 100 )),
 
-        p2 = Utilities.Vector_Utils.add(p.position, Utilities.Vector_Utils.divide(k1, 2.0)),
         d_v2 = Utilities.Vector_Utils.add(p.velocity, Utilities.Vector_Utils.multiply(acceleration, dth)),
-        k2 = Utilities.Vector_Utils.add(p2, Utilities.Vector_Utils.multiply(d_v2, dth * 100 )),
+        k2 = Utilities.Vector_Utils.add(p.position + k1/2.0, Utilities.Vector_Utils.multiply(d_v2, dth * 100 )),
 
-        p3 = Utilities.Vector_Utils.add(p.position, Utilities.Vector_Utils.divide(k2, 2.0)),
         d_v3 = Utilities.Vector_Utils.add(p.velocity, Utilities.Vector_Utils.multiply(acceleration, dth)),
-        k3 = Utilities.Vector_Utils.add(p3, Utilities.Vector_Utils.multiply(d_v3, dth * 100 )),
+        k3 = Utilities.Vector_Utils.add(p.position + k2/2.0, Utilities.Vector_Utils.multiply(d_v3, dth * 100 )),
 
-        p4 = Utilities.Vector_Utils.add(p.position, k3),
         d_v4 = Utilities.Vector_Utils.add(p.velocity, Utilities.Vector_Utils.multiply(acceleration, dtt)),
-        k4 = Utilities.Vector_Utils.add(p4, Utilities.Vector_Utils.multiply(d_v4, dtt * 100 ));
+        k4 = Utilities.Vector_Utils.add(p.position + k3, Utilities.Vector_Utils.multiply(d_v4, dtt * 100 ));
 
     /* x0 + 1/6*k1 + 1/3*k2 + 1/3*k3 + 1/6*k4*/
-    p.position = Utilities.Vector_Utils.add(p.position,
-                                              Utilities.Vector_Utils.multiply(k1, 0.16667),
-                                              Utilities.Vector_Utils.multiply(k2, 0.33334),
-                                              Utilities.Vector_Utils.multiply(k3, 0.33334),
-                                              Utilities.Vector_Utils.multiply(k4, 0.16667));
-
-    p.velocity = Utilities.Vector_Utils.add(p.velocity,
-                                            Utilities.Vector_Utils.multiply(d_v1, 0.16667),
-                                            Utilities.Vector_Utils.multiply(d_v2, 0.33334),
-                                            Utilities.Vector_Utils.multiply(d_v3, 0.33334),
-                                            Utilities.Vector_Utils.multiply(d_v4, 0.16667));
-
-    console.log(k1, k2, k3, k4);
-    console.log(p.position);
+    p.position += k1 * 0.16667 + k2 * 0.33334 + k3 + 0.33334 + k4 * 0.16667;
+    p.velocity += d_v1 * 0.16667 + d_v2 * 0.33334 + d_v3 + 0.33334 + d_v4 * 0.16667;
 
   }
 

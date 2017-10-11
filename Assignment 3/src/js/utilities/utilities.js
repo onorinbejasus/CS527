@@ -16,26 +16,13 @@ const Utilities = function(){
       return {
 
         /* Add all components of a and b*/
-        add: function(a, ...b) {
+        add: function(a,b) {
           let c = {};
           _.keys(a).forEach(function(key){
-            c[key] = a[key];
-            for(let B of b){
-              c[key] += B[key];
-            }
+            c[key] = a[key] + b[key]
           });
-
           return c;
         },
-
-        // /* Add all components of a and b*/
-        // add: function(a, ...b) {
-        //   let c = {};
-        //   _.keys(a).forEach(function(key){
-        //     c[key] = a[key] + b[key]
-        //   });
-        //   return c;
-        // },
 
         /* Difference all components of a and b */
         subtract: function(a,b) {
