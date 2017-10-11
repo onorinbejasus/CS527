@@ -16,29 +16,55 @@ const Utilities = function(){
       return {
 
         /* Add all components of a and b*/
-        add: function(a,b) {
+        add: function(a, ...b) {
           let c = {};
           _.keys(a).forEach(function(key){
-            c[key] = a[key] + b[key]
+            c[key] = a[key];
+            for(let B of b){
+              c[key] += B[key];
+            }
           });
+
           return c;
         },
 
+
         /* Difference all components of a and b */
-        subtract: function(a,b) {
+        subtract: function(a, ...b) {
           let c = {};
           _.keys(a).forEach(function(key){
-            c[key] = a[key] - b[key]
+            c[key] = a[key];
+            for(let B of b){
+              c[key] -= B[key];
+            }
           });
+
           return c;
         },
 
         /* Multiple all components of a with s */
-        multiply: function(a,s) {
+        multiply: function(a, ...s) {
           let c = {};
           _.keys(a).forEach(function(key){
-            c[key] = a[key] * s
+            c[key] = a[key];
+            for(let S of s){
+              c[key] *= S;
+            }
           });
+
+          return c;
+        },
+
+        /* Divide all components of a by s */
+        divide: function(a, ...s) {
+          let c = {};
+          _.keys(a).forEach(function(key){
+            c[key] = a[key];
+            for(let S of s){
+              c[key] /= S;
+            }
+          });
+
           return c;
         },
 
@@ -51,18 +77,19 @@ const Utilities = function(){
           return c;
         },
 
-        /* Divide all components of a by s */
-        divide: function(a,s) {
-          let c = {};
-          _.keys(a).forEach(function(key){
-            c[key] = a[key] / s
-          });
-          return c;
-        },
-
         /* Get the magnitude of the vector */
         magnitude: function(a) {
           return Math.sqrt(Utilities.Vector_Utils.dot(a,a));
+        },
+
+        /* Get the magnitude of the vector */
+        sqrt_component: function(a) {
+          let c = {};
+          _.keys(a).forEach(function(key){
+            let sign = Math.sign(a[key]);
+            c[key] = sign * Math.sqrt(sign * a[key]);
+          });
+          return c;
         },
 
         /* Zero out all values */

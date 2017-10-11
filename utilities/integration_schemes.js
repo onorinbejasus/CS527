@@ -13,6 +13,13 @@ let DRAG_COEFFICIENT = 0.47, // dimensionless
 
 const Integration = function(){
 
+  let multiply = Utilities.Vector_Utils.multiply,
+      multiply_components = Utilities.Vector_Utils.multiply_components,
+      sqrt_components = Utilities.Vector_Utils.sqrt_component,
+      add = Utilities.Vector_Utils.add,
+      difference = Utilities.Vector_Utils.subtract,
+      divide = Utilities.Vector_Utils.divide;
+
   function clearAndAccumulateForces(p) {
     /* Clear the previous forces */
     p.forces = Utilities.Vector_Utils.zero(p.forces);
@@ -30,7 +37,7 @@ const Integration = function(){
       p.velocity.y = 0;
     }
 
-    return p.forces/p.mass;
+    return Utilities.Vector_Utils.divide(p.forces,p.mass);
   }
 
   function calculateVelocityAndPosition(p, acceleration, dt) {
@@ -81,37 +88,46 @@ const Integration = function(){
     /* Accumulate the forces on the particle and calculate the acceleration */
     let acceleration = clearAndAccumulateForces(p);
 
-    let dth = dt + dt/2.0, dtt = dt+dt;
+    let dth = dt + dt/2.0,
+        dtt = dt+dt,
+        vO2 = sqrt_components(p.velocity, p.velocity);
 
-    let d_v1 = Utilities.Vector_Utils.add(p.velocity, Utilities.Vector_Utils.multiply(acceleration, dt)),
-        k1 = Utilities.Vector_Utils.add(p.position, Utilities.Vector_Utils.multiply(d_v1, dt * 100 )),
+    /* K1 -- Euler */
+    let d_v1 = add(p.velocity, multiply(acceleration, dt)),
+        k1 = multiply( divide( add(p.velocity, d_v1), 2.0), dt, 100);
 
-        p2 = Utilities.Vector_Utils.add(p.position, Utilities.Vector_Utils.divide(k1, 2.0)),
-        d_v2 = Utilities.Vector_Utils.add(p.velocity, Utilities.Vector_Utils.multiply(acceleration, dth)),
-        k2 = Utilities.Vector_Utils.add(p2, Utilities.Vector_Utils.multiply(d_v2, dth * 100 )),
+    /* K2 */
+    let k1o2 = divide(k1, 2.0),
+        d_v2 = sqrt_components( add(vO2, multiply_components( acceleration, multiply(k1o2, 2.0)))),
+        k2 = multiply( divide( add(p.velocity, d_v2), 2.0), dth, 100);
 
-        p3 = Utilities.Vector_Utils.add(p.position, Utilities.Vector_Utils.divide(k2, 2.0)),
-        d_v3 = Utilities.Vector_Utils.add(p.velocity, Utilities.Vector_Utils.multiply(acceleration, dth)),
-        k3 = Utilities.Vector_Utils.add(p3, Utilities.Vector_Utils.multiply(d_v3, dth * 100 )),
+    /* K3 */
+    let k2o2 = divide(k2, 2.0),
+        d_v3 = sqrt_components( add(vO2, multiply_components( acceleration, multiply(k2o2, 2.0)))),
+        k3 = multiply( divide( add(p.velocity, d_v3), 2.0), dth, 100);
 
-        p4 = Utilities.Vector_Utils.add(p.position, k3),
-        d_v4 = Utilities.Vector_Utils.add(p.velocity, Utilities.Vector_Utils.multiply(acceleration, dtt)),
-        k4 = Utilities.Vector_Utils.add(p4, Utilities.Vector_Utils.multiply(d_v4, dtt * 100 ));
+    /* K4 */
+    let d_v4 = sqrt_components( add(vO2, multiply_components( acceleration, multiply(k3, 2.0)))),
+        k4 = multiply( divide( add(p.velocity, d_v4), 2.0), dtt, 100);
+
 
     /* x0 + 1/6*k1 + 1/3*k2 + 1/3*k3 + 1/6*k4*/
-    p.position = Utilities.Vector_Utils.add(p.position,
-                                              Utilities.Vector_Utils.multiply(k1, 0.16667),
-                                              Utilities.Vector_Utils.multiply(k2, 0.33334),
-                                              Utilities.Vector_Utils.multiply(k3, 0.33334),
-                                              Utilities.Vector_Utils.multiply(k4, 0.16667));
+    let d_pos = Utilities.Vector_Utils.add(
+                                  Utilities.Vector_Utils.multiply(k1, 0.16667),
+                                  Utilities.Vector_Utils.multiply(k2, 0.33334),
+                                  Utilities.Vector_Utils.multiply(k3, 0.33334),
+                                  Utilities.Vector_Utils.multiply(k4, 0.16667));
 
-    p.velocity = Utilities.Vector_Utils.add(p.velocity,
-                                            Utilities.Vector_Utils.multiply(d_v1, 0.16667),
-                                            Utilities.Vector_Utils.multiply(d_v2, 0.33334),
-                                            Utilities.Vector_Utils.multiply(d_v3, 0.33334),
-                                            Utilities.Vector_Utils.multiply(d_v4, 0.16667));
+    let d_vel = Utilities.Vector_Utils.add(
+                                  Utilities.Vector_Utils.multiply(d_v1, 0.16667),
+                                  Utilities.Vector_Utils.multiply(d_v2, 0.33334),
+                                  Utilities.Vector_Utils.multiply(d_v3, 0.33334),
+                                  Utilities.Vector_Utils.multiply(d_v4, 0.16667));
 
-    console.log(k1, k2, k3, k4);
+    p.position = add(p.position, d_pos);
+    p.velocity = add(p.velocity, d_vel);
+
+    // console.log(k1, k2, k3, k4);
     console.log(p.position);
 
   }
