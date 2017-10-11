@@ -98,37 +98,33 @@ const Integration = function(){
 
     /* K2 */
     let k1o2 = divide(k1, 2.0),
-        d_v2 = sqrt_components( add(vO2, multiply_components( acceleration, multiply(k1o2, 2.0)))),
+        d_v2 = sqrt_components( add(vO2, multiply_components( acceleration, multiply(add(p.position,k1o2), 2.0) ))),
         k2 = multiply( divide( add(p.velocity, d_v2), 2.0), dth, 100);
 
     /* K3 */
     let k2o2 = divide(k2, 2.0),
-        d_v3 = sqrt_components( add(vO2, multiply_components( acceleration, multiply(k2o2, 2.0)))),
+        d_v3 = sqrt_components( add(vO2, multiply_components( acceleration, multiply(add(p.position,k2o2), 2.0)))),
         k3 = multiply( divide( add(p.velocity, d_v3), 2.0), dth, 100);
 
     /* K4 */
-    let d_v4 = sqrt_components( add(vO2, multiply_components( acceleration, multiply(k3, 2.0)))),
+    let d_v4 = sqrt_components( add(vO2, multiply_components( acceleration, multiply(add(p.position,k3), 2.0)))),
         k4 = multiply( divide( add(p.velocity, d_v4), 2.0), dtt, 100);
 
-
     /* x0 + 1/6*k1 + 1/3*k2 + 1/3*k3 + 1/6*k4*/
-    let d_pos = Utilities.Vector_Utils.add(
-                                  Utilities.Vector_Utils.multiply(k1, 0.16667),
-                                  Utilities.Vector_Utils.multiply(k2, 0.33334),
-                                  Utilities.Vector_Utils.multiply(k3, 0.33334),
-                                  Utilities.Vector_Utils.multiply(k4, 0.16667));
+    let d_pos = add(
+                    multiply(k1, 0.16667),
+                    multiply(k2, 0.33334),
+                    multiply(k3, 0.33334),
+                    multiply(k4, 0.16667));
 
-    let d_vel = Utilities.Vector_Utils.add(
-                                  Utilities.Vector_Utils.multiply(d_v1, 0.16667),
-                                  Utilities.Vector_Utils.multiply(d_v2, 0.33334),
-                                  Utilities.Vector_Utils.multiply(d_v3, 0.33334),
-                                  Utilities.Vector_Utils.multiply(d_v4, 0.16667));
+    let d_vel = add(
+                    multiply(d_v1, 0.16667),
+                    multiply(d_v2, 0.33334),
+                    multiply(d_v3, 0.33334),
+                    multiply(d_v4, 0.16667));
 
     p.position = add(p.position, d_pos);
     p.velocity = add(p.velocity, d_vel);
-
-    // console.log(k1, k2, k3, k4);
-    console.log(p.position);
 
   }
 
