@@ -37,15 +37,15 @@ const Integration = function(){
       p.velocity.y = 0;
     }
 
-    return Utilities.Vector_Utils.divide(p.forces,p.mass);
+    return divide(p.forces,p.mass);
   }
 
   function calculateVelocityAndPosition(p, acceleration, dt) {
     /* Calculate the new velocity */
-    let d_v = Utilities.Vector_Utils.add(p.velocity, Utilities.Vector_Utils.multiply(acceleration, dt)),
+    let d_v = add(p.velocity, multiply(acceleration, dt)),
         /* Use the new and previous velocity to calculate the new position */
         d_x =
-            Utilities.Vector_Utils.add(p.position, Utilities.Vector_Utils.multiply(d_v, dt * 100 /* Convert back to cm */));
+            add(p.position, multiply(d_v, dt * 100 /* Convert back to cm */));
     /* Set the new velocity */
     if(!isNaN(d_v.y) && isFinite(d_v.y))
       p.velocity = d_v;
@@ -90,7 +90,7 @@ const Integration = function(){
 
     let dth = dt + dt/2.0,
         dtt = dt+dt,
-        vO2 = sqrt_components(p.velocity, p.velocity);
+        vO2 = multiply_components(p.velocity, p.velocity);
 
     /* K1 -- Euler */
     let d_v1 = add(p.velocity, multiply(acceleration, dt)),
