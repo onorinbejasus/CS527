@@ -2,14 +2,13 @@
 Name: Timothy Luciani
 Class: CS527
 File: utilities.js
-Assignment 1
 */
 "use strict";
 const Utilities = function(){
-
-  const FLOOR_RESTITUTION  = 0.7;
-  let epsilon = 0.01;
-
+  /* Global Definitions */
+  const FLOOR_RESTITUTION  = 0.7,
+         particle_def = { position:[0,0], velocity:{x:0,y:0}, forces: {x:0,y:0}, mass: 1.0/*kg*/, radius: 25.0,/*cm*/
+                          motion: true, collision: false, deformation : 50.0 };
   return {
     /* Vector Math Utilities */
     Vector_Utils: function() {
@@ -24,10 +23,8 @@ const Utilities = function(){
               c[key] += B[key];
             }
           });
-
           return c;
         },
-
 
         /* Difference all components of a and b */
         subtract: function(a, ...b) {
@@ -38,7 +35,6 @@ const Utilities = function(){
               c[key] -= B[key];
             }
           });
-
           return c;
         },
 
@@ -51,7 +47,6 @@ const Utilities = function(){
               c[key] *= S;
             }
           });
-
           return c;
         },
 
@@ -64,7 +59,24 @@ const Utilities = function(){
               c[key] /= S;
             }
           });
+          return c;
+        },
 
+        /* Divide all components by 2 */
+        shift_divide: function(a) {
+          let c = {};
+          _.keys(a).forEach(function(key){
+            c[key] = a[key] >> 1;
+          });
+          return c;
+        },
+
+        /* Multiply all components by 2 */
+        shift_multiply: function(a) {
+          let c = {};
+          _.keys(a).forEach(function(key){
+            c[key] = a[key] << 1;
+          });
           return c;
         },
 
@@ -112,6 +124,7 @@ const Utilities = function(){
       }
     }(),
 
+    /* Utilities for checking model conditions and create elements */
     Model_Utils : function() {
         return {
           checkForIntersections: function(particle, objects) {
@@ -145,7 +158,7 @@ const Utilities = function(){
 
               /* Stop the particle if it is just resting on the bottom */
               if(o.name === "floor"){
-                if(Math.abs(Utilities.Vector_Utils.magnitude(particle.forces) - 9.81) < 0.05 &&
+                if(Math.abs(Utilities.Vector_Utils.magnitude(particle.forces) - 9.81) < 0.09 &&
                     Math.abs(o.position.y - particle.position.y) <= particle.radius
                 ){
                   particle.motion = false;
@@ -157,6 +170,18 @@ const Utilities = function(){
               }
 
             });
+          },
+          createParticle: function(position, velocity) {
+            /* Clone the particle template*/
+            let particle = _.cloneDeep(particle_def);
+            /* Set the position and velocity if supplied */
+            if(position){
+              particle.position = position;
+            }
+            if(velocity){
+              particle.velocity = velocity;
+            }
+            return particle;
           }
         }
     }()

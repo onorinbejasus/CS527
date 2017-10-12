@@ -8,8 +8,6 @@ Assignment 1
 (function(){
   let
       particles = [],
-      particle = { position:[0,0], velocity:{x:0,y:0}, forces: {x:0,y:0}, mass: 1.0/*kg*/, radius: 25.0/*cm*/,
-        motion: true, collision: false, deformation : 50.0 },
       canvas, ctx, animation_then, calculate_then,
       background = "rgba(238,238,238,0.4)";
 
@@ -24,7 +22,7 @@ Assignment 1
 
   function mouseClickCB(e) {
     /* Clone the particle template */
-    let p = _.cloneDeep(particle);
+    let p = Utilities.Model_Utils.createParticle();
     /* Set initial positions */
     p.position = {x:e.x, y:e.y};
     /* Add the particle to the list */
@@ -178,7 +176,6 @@ Assignment 1
           d3.select('#massText').text("Mass: " + value+"kg");
           /* Set the particles to a heavier mass */
           let val = parseInt(value);
-          particle.mass = val;
           particles.forEach(function(p){
             p.mass = val;
           });

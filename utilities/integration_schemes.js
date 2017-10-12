@@ -2,7 +2,6 @@
 Name: Timothy Luciani
 Class: CS527
 File: integration_schemes.js
-Assignment 1
 */
 "use strict";
 
@@ -13,39 +12,42 @@ let DRAG_COEFFICIENT = 0.47, // dimensionless
 
 const Integration = function(){
 
-  let multiply = Utilities.Vector_Utils.multiply,
-      multiply_components = Utilities.Vector_Utils.multiply_components,
-      sqrt_components = Utilities.Vector_Utils.sqrt_component,
-      add = Utilities.Vector_Utils.add,
-      difference = Utilities.Vector_Utils.subtract,
-      divide = Utilities.Vector_Utils.divide;
+  /* Utility shortcuts */
+  const multiply = Utilities.Vector_Utils.multiply,
+        add = Utilities.Vector_Utils.add,
+        divide = Utilities.Vector_Utils.divide,
+        shift_divide = Utilities.Vector_Utils.shift_divide,
+        create_particle = Utilities.Model_Utils.createParticle;
+
+  /* Constant Forces */
+  const GRAVITY = function(){return {x:0.0, y:-9.81 * Y_UP}},
+        AIR_FRICTION = function(particle) {
+          let area = Math.PI * particle.radius/100.0 * particle.radius/100.0, // convert to meters
+              coeff = -0.5 * DRAG_COEFFICIENT * area * FLUID_DENSITY,
+              drag = ( particle.velocity.y === 0 ) ? 0 : coeff * particle.velocity.y * particle.velocity.y * particle.velocity.y / Math.abs(particle.velocity.y );
+          return {x:0, y: isNaN(drag/particle.mass)?0:drag/particle.mass};
+        };
+
+  const CONSTANT_FORCES = [GRAVITY,AIR_FRICTION];
 
   function clearAndAccumulateForces(p) {
     /* Clear the previous forces */
     p.forces = Utilities.Vector_Utils.zero(p.forces);
     /* Accumulate the constant forces */
     CONSTANT_FORCES.forEach(function(f){
-      let force = f(p);
-      // if( Math.abs(force.y) > 6.0 * 9.8 ){
-      //   force = BOUYANCY(p);
-      // }
-      p.forces = Utilities.Vector_Utils.add(p.forces, force);
+      p.forces = add(p.forces, f(p));
     });
-    if( Math.abs(p.forces.y) > 6.0 * 9.8 ){
-      //console.log(BOUYANCY(p));
-      p.forces.y = 0;
-      p.velocity.y = 0;
-    }
-
     return divide(p.forces,p.mass);
   }
 
-  function calculateVelocityAndPosition(p, acceleration, dt) {
-    /* Calculate the new velocity */
-    let d_v = add(p.velocity, multiply(acceleration, dt)),
+  /* Euler Integration */
+  function euler(p,dt) {
+    /* Accumulate the forces on the particle and calculate the acceleration */
+    let acceleration = clearAndAccumulateForces(p),
+        /* Calculate the new velocity */
+        d_v = add(p.velocity, multiply(acceleration, dt)),
         /* Use the new and previous velocity to calculate the new position */
-        d_x =
-            add(p.position, multiply(d_v, dt * 100 /* Convert back to cm */));
+        d_x = add(p.position, multiply(d_v, dt * 100 /* Convert back to cm */));
     /* Set the new velocity */
     if(!isNaN(d_v.y) && isFinite(d_v.y))
       p.velocity = d_v;
@@ -54,78 +56,60 @@ const Integration = function(){
       p.position = d_x;
   }
 
-  /* Constant Forces */
-  const GRAVITY = function(){return {x:0.0, y:-9.81 * Y_UP}},
-
-      AIR_FRICTION = function(particle) {
-        let area = Math.PI * particle.radius/100.0 * particle.radius/100.0, // convert to meters
-            coeff = -0.5 * DRAG_COEFFICIENT * area * FLUID_DENSITY,
-            drag = ( particle.velocity.y === 0 ) ? 0 : coeff * particle.velocity.y * particle.velocity.y * particle.velocity.y / Math.abs(particle.velocity.y );
-        return {x:0, y: isNaN(drag/particle.mass)?0:drag/particle.mass};
-      },
-
-      BOUYANCY = function(particle) {
-        let f = DRAG_COEFFICIENT * FLUID_DENSITY / (2.0 * particle.velocity.y * particle.velocity.y * particle.velocity.y / Math.abs(particle.velocity.y ));
-        f /= -particle.mass * Y_UP;
-        return {x:0,y:f};
-      };
-
-  const CONSTANT_FORCES = [GRAVITY,AIR_FRICTION];
-
-  /* Euler Integration */
-  function euler(p,dt) {
-    /* Accumulate the forces on the particle and calculate the acceleration */
+  function RK4(p, dt) {
+    /* Calculate the initial acceleration */
     let acceleration = clearAndAccumulateForces(p);
-    /* Update the velocity and position */
-    calculateVelocityAndPosition(p, acceleration, dt);
-  }
-
-  /* Runge-Kutta 4 Integration */
-  function RK4(p,dt){
-
-    console.log(p);
-
-    /* Accumulate the forces on the particle and calculate the acceleration */
-    let acceleration = clearAndAccumulateForces(p);
-
-    let dth = dt + dt/2.0,
-        dtt = dt+dt,
-        vO2 = multiply_components(p.velocity, p.velocity);
 
     /* K1 -- Euler */
-    let d_v1 = add(p.velocity, multiply(acceleration, dt)),
-        k1 = multiply( divide( add(p.velocity, d_v1), 2.0), dt, 100);
+    let k1 = multiply(acceleration,dt),
+        /* Save k1/2.0 for later use */
+        k1over2 = shift_divide(k1),
+        /* Euler Velocity = v*dt */
+        d_v1 = multiply(p.velocity, dt, 100.0 /*m->cm*/),
+        /* Calculate the euler midpoint position:
+            p1 = p0 * (v*dt)/2.0 */
+        p1 = create_particle( add(p.position, shift_divide(d_v1)) );
 
-    /* K2 */
-    let k1o2 = divide(k1, 2.0),
-        d_v2 = sqrt_components( add(vO2, multiply_components( acceleration, multiply(add(p.position,k1o2), 2.0) ))),
-        k2 = multiply( divide( add(p.velocity, d_v2), 2.0), dth, 100);
+    /* Calculate the acceleration at the Euler position */
+    acceleration = clearAndAccumulateForces(p1);
+    /* K2 -- First Midpoint */
+    let k2 = multiply(acceleration,dt),
+        /* Save k2/2.0 for later use */
+        k2over2 = shift_divide(k2),
+        /* Midpoint velocity: d_v2 = dt * (v0 + k1/2.0) */
+        dv_2 = multiply(add(p.velocity, k1over2), dt, 100.0 /*m->cm*/),
+        /* Calculate the midpoint position: p2 = p0 * (v*dt)/2.0 */
+        p2 = create_particle( add(p.position, shift_divide(dv_2)) );
 
-    /* K3 */
-    let k2o2 = divide(k2, 2.0),
-        d_v3 = sqrt_components( add(vO2, multiply_components( acceleration, multiply(add(p.position,k2o2), 2.0)))),
-        k3 = multiply( divide( add(p.velocity, d_v3), 2.0), dth, 100);
+    /* Calculate the acceleration at the first midpoint position */
+    acceleration = clearAndAccumulateForces(p2);
+    /* K3 -- Second Midpoint */
+    let k3 = multiply(acceleration,dt),
+        /* Midpoint velocity: d_v3 = dt * (v0 + k2) */
+        dv_3 = multiply( add(p.velocity, k2over2), dt, 100.0 /*m->cm*/),
+        /* Calculate the midpoint position: p2 = p0 * (v*dt)/2.0 */
+        p3 = create_particle( add(p.position, dv_3) );
 
-    /* K4 */
-    let d_v4 = sqrt_components( add(vO2, multiply_components( acceleration, multiply(add(p.position,k3), 2.0)))),
-        k4 = multiply( divide( add(p.velocity, d_v4), 2.0), dtt, 100);
+    /* Calculate the acceleration at the last midpoint */
+    acceleration = clearAndAccumulateForces(p3);
+    /* K4 -- Last Midpoint */
+    let k4 = multiply(acceleration,dt),
+        /* Midpoint velocity: d_v3 = dt * (v0 + k3) */
+        dv_4 = multiply( add(p.velocity, k3), dt, 100.0 /*m->cm*/);
 
-    /* x0 + 1/6*k1 + 1/3*k2 + 1/3*k3 + 1/6*k4*/
-    let d_pos = add(
-                    multiply(k1, 0.16667),
-                    multiply(k2, 0.33334),
-                    multiply(k3, 0.33334),
-                    multiply(k4, 0.16667));
+    /* Set the new position */
+    p.position = add(p.position,
+                      multiply(d_v1, 0.16667),
+                      multiply(dv_2, 0.33334),
+                      multiply(dv_3, 0.33334),
+                      multiply(dv_4, 0.16667));
 
-    let d_vel = add(
-                    multiply(d_v1, 0.16667),
-                    multiply(d_v2, 0.33334),
-                    multiply(d_v3, 0.33334),
-                    multiply(d_v4, 0.16667));
-
-    p.position = add(p.position, d_pos);
-    p.velocity = add(p.velocity, d_vel);
-
+    /* Set the new velocity */
+    p.velocity = add(p.velocity,
+                        multiply(k1, 0.16667),
+                        multiply(k2, 0.33334),
+                        multiply(k3, 0.33334),
+                        multiply(k4, 0.16667));
   }
 
   return {
