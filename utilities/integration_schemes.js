@@ -22,7 +22,7 @@ const Integration = function(){
   /* Constant Forces */
   const GRAVITY = function(){return {x:0.0, y:-9.81 * Y_UP}},
         AIR_FRICTION = function(particle) {
-          let area = Math.PI * particle.radius/100.0 * particle.radius/100.0, // convert to meters
+          let area = Math.PI * particle.radius/100.0 * particle.radius/100.0, // convert from centimeters to meters
               coeff = -0.5 * DRAG_COEFFICIENT * area * FLUID_DENSITY,
               drag = ( particle.velocity.y === 0 ) ? 0 : coeff * particle.velocity.y * particle.velocity.y * particle.velocity.y / Math.abs(particle.velocity.y );
           return {x:0, y: isNaN(drag/particle.mass)?0:drag/particle.mass};
@@ -47,7 +47,7 @@ const Integration = function(){
         /* Calculate the new velocity */
         d_v = add(p.velocity, multiply(acceleration, dt)),
         /* Use the new and previous velocity to calculate the new position */
-        d_x = add(p.position, multiply(d_v, dt * 100 /* Convert back to cm */));
+        d_x = add(p.position, multiply(d_v, dt * 100.0 /* Convert back to cm */));
     /* Set the new velocity */
     if(!isNaN(d_v.y) && isFinite(d_v.y))
       p.velocity = d_v;
@@ -59,15 +59,13 @@ const Integration = function(){
   function RK4(p, dt) {
     /* Calculate the initial acceleration */
     let acceleration = clearAndAccumulateForces(p);
-
     /* K1 -- Euler */
     let k1 = multiply(acceleration,dt),
         /* Save k1/2.0 for later use */
         k1over2 = shift_divide(k1),
         /* Euler Velocity = v*dt */
         d_v1 = multiply(p.velocity, dt, 100.0 /*m->cm*/),
-        /* Calculate the euler midpoint position:
-            p1 = p0 * (v*dt)/2.0 */
+        /* Calculate the euler midpoint position: p1 = p0 * (v*dt)/2.0 */
         p1 = create_particle( add(p.position, shift_divide(d_v1)) );
 
     /* Calculate the acceleration at the Euler position */
@@ -114,7 +112,7 @@ const Integration = function(){
 
   return {
     euler_step: euler,
-    RK4: RK4
+    RK4_step: RK4
   }
 
 }();
