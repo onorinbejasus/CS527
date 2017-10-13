@@ -16,9 +16,10 @@
     <script type="application/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/lodash.js/4.17.4/lodash.js"></script>
 
     <!-- SRC JS -->
-    <script type="application/javascript" src="src/js/main.js"></script>
     <script type="application/javascript" src="../utilities/utilities.js"></script>
     <script type="application/javascript" src="../utilities/integration_schemes.js"></script>
+    <script type="application/javascript" src="src/js/boids.js"></script>
+    <script type="application/javascript" src="src/js/main.js"></script>
 
 </head>
 <body>
@@ -26,44 +27,6 @@
     <div class="row">
         <div class="col-8">
             <canvas id="particleCanvas" class="background_air" width="1000" height="1000" style="border:1px solid #d3d3d3;"></canvas>
-        </div>
-        <div class="col-2">
-            <div class="center-vertically">
-                <div class="row">
-                    <div class="col-12">
-                        <label for="fluids">Fluids</label>
-                        <div id="fluids" class="btn-group" role="group" aria-label="Fluids">
-                            <button type="button" class="btn btn-secondary active">Air</button>
-                            <button type="button" class="btn btn-secondary">Water</button>
-                            <button type="button" class="btn btn-secondary">Mercury</button>
-                        </div>
-                    </div>
-                </div>
-                <br>
-                <div class="row">
-                    <div class="col-12">
-                        <span id="massText">Mass: 1kg</span>
-                        <div id="massSlider"></div>
-                    </div>
-                </div>
-                <br>
-                <br>
-                <div class="row">
-                    <div class="col-12">
-                        Motion Blur
-                        <div class="form-check form-check-inline">
-                            <label class="form-check-label">
-                                <input class="form-check-input" type="radio" name="blur" id="inlineRadio1" value="Off" checked> Off
-                            </label>
-                        </div>
-                        <div class="form-check form-check-inline">
-                            <label class="form-check-label">
-                                <input class="form-check-input" type="radio" name="blur" id="inlineRadio2" value="On"> On
-                            </label>
-                        </div>
-                    </div>
-                </div>
-            </div>
         </div>
     </div>
 </div>

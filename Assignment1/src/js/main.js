@@ -80,7 +80,7 @@ Assignment 1
     particles.forEach(function(p){
       if(p.motion){
         /* Integrate */
-        Integration.RK4_step(p, 1/40);
+        Integration.RK4_step(p, 1.3/33.0);
         /* Iterate over every object and check for collisions */
         Utilities.Model_Utils.checkForIntersections(p, objects);
         /* Check the deformation and bring it back to its normal scale */
