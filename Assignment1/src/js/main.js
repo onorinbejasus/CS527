@@ -20,6 +20,18 @@ Assignment 1
 
   let motion_blur = false;
 
+  /* Constant Forces */
+  const GRAVITY = function(){return {x:0.0, y:-9.81 * Y_UP}},
+    AIR_FRICTION = function(particle) {
+      let area = Math.PI * particle.radius/100.0 * particle.radius/100.0, // convert from centimeters to meters
+        coeff = -0.5 * DRAG_COEFFICIENT * area * FLUID_DENSITY,
+        drag = ( particle.velocity.y === 0 ) ? 0 : coeff * particle.velocity.y * particle.velocity.y * particle.velocity.y / Math.abs(particle.velocity.y );
+      return {x:0, y: isNaN(drag/particle.mass)?0:drag/particle.mass};
+    };
+
+  const CONSTANT_FORCES = [GRAVITY,AIR_FRICTION],
+        Integration = new Integration(CONSTANT_FORCES);
+
   function mouseClickCB(e) {
     /* Clone the particle template */
     let p = Utilities.Model_Utils.createParticle();

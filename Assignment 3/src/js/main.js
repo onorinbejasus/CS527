@@ -28,34 +28,10 @@ Assignment 3
   }
 
   function render(){
-
-    if(motion_blur){
-      ctx.fillStyle = background;
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
-    }
-    else {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-    }
-
-
-    /* iterate over each particle and render them to the screen */
-    particles.forEach(function(p){
-
-      /* Save the context state*/
-      ctx.save();
-
-      ctx.translate(p.position.x, p.position.y);
-/*
-      /* Draw the ball */
-      ctx.beginPath();
-      ctx.arc(0,0, p.radius, 0, 2 * Math.PI, false);
-
-      /* Restore the original state*/
-      ctx.restore();
-
-      ctx.fillStyle = "rgb(255, 0, 0)";
-      ctx.fill();
-    });
+    /* Clear the canvas s*/
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    /* Render the scene */
+    Boids_Manager.render(ctx);
   }
 
   function derivativeEval(dt) {
@@ -101,9 +77,10 @@ Assignment 3
       animation_then = now - (elapsed % interval);
 
       //calculateNextStep(elapsed/1e3);
+      Boids_Manager.navigate(elapsed/1e3);
 
       /* Render the scene */
-      Boids_Manager.render(ctx);
+      render();
     }
   }
 
@@ -118,14 +95,13 @@ Assignment 3
     canvas = document.getElementById("particleCanvas");
     ctx = canvas.getContext("2d");
 
-    Boids_Manager.initialize(4);
+    Boids_Manager.initialize(10);
 
     /* Add the click listener */
     // canvas.addEventListener("click", mouseClickCB);
 
     /* Begin animation */
     setAnimationIntervals(64, animate);
-
   }
 
   /* start the application once the DOM is ready */
