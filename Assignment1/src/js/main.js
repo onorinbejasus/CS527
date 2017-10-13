@@ -47,7 +47,6 @@ Assignment 1
 
       /* Save the context state*/
       ctx.save();
-
       ctx.translate(p.position.x, p.position.y);
 /*
       /!* If a collision occurred, deform the ball *!/

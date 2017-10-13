@@ -6,8 +6,8 @@ File: utilities.js
 "use strict";
 const Utilities = function(){
   /* Global Definitions */
-  const FLOOR_RESTITUTION  = 0.7,
-         particle_def = { position:[0,0], velocity:{x:0,y:0}, forces: {x:0,y:0}, mass: 1.0/*kg*/, radius: 25.0,/*cm*/
+  const FLOOR_RESTITUTION  = 0.7;
+  let particle_def = { position:{x:0,y:0}, velocity:{x:0,y:0}, forces: {x:0,y:0}, mass: 1.0/*kg*/, radius: 25.0,/*cm*/
                           motion: true, collision: false, deformation : 50.0 };
   return {
     /* Vector Math Utilities */
@@ -127,6 +127,11 @@ const Utilities = function(){
     /* Utilities for checking model conditions and create elements */
     Model_Utils : function() {
         return {
+
+          setParticleDefinition: function(def){
+            particle_def = def;
+          },
+
           checkForIntersections: function(particle, objects) {
             /* Check for an intersection with any of the objects */
             objects.forEach(function(o){

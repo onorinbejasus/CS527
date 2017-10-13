@@ -22,9 +22,9 @@ Assignment 3
 
   function mouseClickCB(e) {
     /* Clone the particle template */
-    let p = Utilities.Model_Utils.createParticle( {position:{x:e.x, y:e.y}} );
+    //let p = Utilities.Model_Utils.createParticle( {position:{x:e.x, y:e.y}} );
     /* Add the particle to the list */
-    particles.push(p);
+    //particles.push(p);
   }
 
   function render(){
@@ -100,8 +100,10 @@ Assignment 3
       // Get ready for next frame by setting then=now, but...
       animation_then = now - (elapsed % interval);
 
+      //calculateNextStep(elapsed/1e3);
+
       /* Render the scene */
-      render();
+      Boids_Manager.render(ctx);
     }
   }
 
@@ -116,11 +118,11 @@ Assignment 3
     canvas = document.getElementById("particleCanvas");
     ctx = canvas.getContext("2d");
 
-    /* Add the click listener */
-    canvas.addEventListener("click", mouseClickCB);
+    Boids_Manager.initialize(4);
 
-    /* Begin moving forward in time */
-    setAnimationIntervals(128, calculateNextStep);
+    /* Add the click listener */
+    // canvas.addEventListener("click", mouseClickCB);
+
     /* Begin animation */
     setAnimationIntervals(64, animate);
 
