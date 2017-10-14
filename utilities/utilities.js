@@ -14,6 +14,9 @@ const Utilities = function(){
     Vector_Utils: function() {
       return {
 
+        /* Create a 2D empty vector */
+        create_vector() { return {x:0,y:0} },
+
         /* Add all components of a and b*/
         add: function(a, ...b) {
           let c = {};

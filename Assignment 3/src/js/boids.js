@@ -9,7 +9,9 @@ Assignment 3
   const Boids_Manager = function() {
 
     const createBoid = Utilities.Model_Utils.createParticle,
+          createVec2 = Utilities.Vector_Utils.create_vector,
           difference = Utilities.Vector_Utils.subtract,
+          dot        = Utilities.Vector_Utils.dot,
           magnitude  = Utilities.Vector_Utils.magnitude;
 
     let Solver = null;
@@ -17,7 +19,7 @@ Assignment 3
     let self = {
       boids : [],
       particle_def: { position: {x:0,y:0}, velocity: {x:0,y:0}, forces: {x:0,y:0},
-                      length: 1.0, rotation:{pitch:0, yaw:0, roll:0}, mass: 1 }
+                      length: 1.0, rotation:{pitch:0, yaw:0, roll:0}, sight: 100, mass: 1 }
     };
 
     /* Initialize the boids system
@@ -44,8 +46,12 @@ Assignment 3
         /* Calculate the distance */
         let distance = magnitude(difference(neighbor.position,boid.position));
         /* If the boid is close enough to us, add it as a neighbor*/
-        if(distance < 100) {
-          neighbors.push( neighbor );
+        if(distance < boid.sight) {
+          /* Check if the neighbor is in our FOV */
+          let FOV = dot(difference(neighbor.position, boid.position), boid.velocity);
+          if(FOV > 0) {
+            neighbors.push( neighbor );
+          }
         }
       }
       return neighbors;
@@ -60,20 +66,25 @@ Assignment 3
 
       for(let boid of self.boids){
 
-        /* Alignment -- Normalized neighbor velocity */
-
+        /* Find the closest neighbors */
         let neighbors = find_closest_neighbors(boid);
+        /* Initiate */
+        let alignment  = createVec2(),
+            cohesion   = createVec2(),
+            separation = createVec2();
 
+        /* Iterate over the neighbors and calculate the alignment, cohesion, and separation */
+        for(let neighbor of neighbors){
 
+          /* Alignment -- Normalized neighbor velocity */
 
+          /* Cohesion -- Normalized neighbor position */
 
-        /* Cohesion -- Normalized neighbor position */
-
-        /* Separation
-          -- Negated, normalized distance of boid with respect to each of its neighbors */
-
+          /* Separation
+            -- Negated, normalized distance of boid with respect to each of its neighbors */
+        }
+        /* Step forward in time */
         Solver.RK4_step(boid, dt);
-
       }
 
     }
