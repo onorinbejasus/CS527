@@ -11,8 +11,10 @@ Assignment 3
     const createBoid = Utilities.Model_Utils.createParticle,
           createVec2 = Utilities.Vector_Utils.create_vector,
           difference = Utilities.Vector_Utils.subtract,
+          divide        = Utilities.Vector_Utils.divide,
+          magnitude  = Utilities.Vector_Utils.magnitude,
           dot        = Utilities.Vector_Utils.dot,
-          magnitude  = Utilities.Vector_Utils.magnitude;
+          add        = Utilities.Vector_Utils.add;
 
     let Solver = null;
 
@@ -47,7 +49,7 @@ Assignment 3
         let distance = magnitude(difference(neighbor.position,boid.position));
         /* If the boid is close enough to us, add it as a neighbor*/
         if(distance < boid.sight) {
-          /* Check if the neighbor is in our FOV */
+          /* Check if the neighbor is in our FOV (270 degrees -- good enough) */
           let FOV = dot(difference(neighbor.position, boid.position), boid.velocity);
           if(FOV > 0) {
             neighbors.push( neighbor );
@@ -77,20 +79,25 @@ Assignment 3
         for(let neighbor of neighbors){
 
           /* Alignment -- Normalized neighbor velocity */
+          alignment = add(alignment, neighbor.velocity);
 
           /* Cohesion -- Normalized neighbor position */
+
 
           /* Separation
             -- Negated, normalized distance of boid with respect to each of its neighbors */
         }
+
+        /* normalize the three rules based on the number of neighbors */
+        divide(alignment, neighbors.length);
+
         /* Step forward in time */
         Solver.RK4_step(boid, dt);
       }
-
     }
 
     /* Renders the particles onto the screen */
-    function render_boids(ctx){
+    function render_boids_2D(ctx){
       /* iterate over each of the boids
          and render a triangle around its position */
       for(let boid of self.boids){
@@ -112,7 +119,7 @@ Assignment 3
     return {
       initialize: initialize_system,
       navigate: move_boids,
-      render: render_boids
+      render: render_boids_2D
     }
 
   }();

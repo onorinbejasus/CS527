@@ -47,6 +47,7 @@ let Integration = function(CONSTANT_FORCES){
       p.position = d_x;
   }
 
+  /* RK4 Integration */
   function RK4(p, dt, forces) {
     /* Check to see if any non-constant forces were passed */
     let other_forces = forces || [];
@@ -102,6 +103,11 @@ let Integration = function(CONSTANT_FORCES){
                         multiply(k2, 0.33334),
                         multiply(k3, 0.33334),
                         multiply(k4, 0.16667));
+  }
+
+  /* Verlet Integration */
+  function verlet() {
+
   }
 
   return {
