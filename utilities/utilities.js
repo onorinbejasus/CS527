@@ -52,7 +52,7 @@ const Utilities = function(){
         angleBetween: function(a,b) {
           let a_mag = Vector_Utils.magnitude(a),
               b_mag = Vector_Utils.magnitude(b);
-          return Math.acos( Vector_Utils.divide(Vector_Utils.dot(a,b), a_mag*b_mag) );
+          return Vector_Utils.dot(a,b) / a_mag*b_mag;
         },
 
         /* Multiple all components of a with s */

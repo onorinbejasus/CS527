@@ -25,7 +25,7 @@ Assignment 3
     let self = {
       boids : [],
       particle_def: { position: {x:0,y:0}, velocity: {x:0,y:0}, forces: {x:0,y:0},
-                      length: 1.0, rotation:{pitch:0, yaw:0, roll:0}, sight: 100, mass: 1 }
+                      length: 1.0, rotation:{pitch:0, yaw:0, roll:0}, sight: 50, mass: 1 }
     };
 
     /* Initialize the boids system
@@ -39,11 +39,12 @@ Assignment 3
       let radius = 125, center = {x:600,y:400}, toRadians = Math.PI/180.0;
       for(let i = 0; i < flock_size; i++){
 
-        let angle = i * 30 * toRadians,
+        let angle = (i * 30 * toRadians)+90*toRadians,
             x = center.x + Math.cos(angle) * radius,
-            y = center.y + Math.sin(angle) * radius;
-
-        self.boids.push(createBoid({x:x, y:y}, {x:-1, y:0}));
+            y = center.y + Math.sin(angle) * radius,
+            boid = createBoid({x:x, y:y}, {x:-1, y:0});
+        boid.name = i;
+        self.boids.push(boid);
       }
     }
 
@@ -121,7 +122,6 @@ Assignment 3
         /* Step forward in time */
         Solver.RK4_step(boid, dt,[compute_flocking_force]);
       }
-
     }
 
     /* Renders the particles onto the screen */
