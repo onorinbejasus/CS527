@@ -9,23 +9,23 @@ Assignment 3
   const Boids_Manager = function() {
 
     /* Convenience utility function references */
-    const createBoid = Utilities.Model_Utils.createParticle,
-          createVec2 = Utilities.Vector_Utils.create_vector,
-          difference = Utilities.Vector_Utils.subtract,
+    const createBoid   = Utilities.Model_Utils.createParticle,
+          createVec2   = Utilities.Vector_Utils.create_vector,
+          difference   = Utilities.Vector_Utils.subtract,
           angleBetween = Utilities.Vector_Utils.angleBetween,
-          multiply   = Utilities.Vector_Utils.multiply,
-          divide     = Utilities.Vector_Utils.divide,
-          magnitude  = Utilities.Vector_Utils.magnitude,
-          normalize  = Utilities.Vector_Utils.normalize,
-          dot        = Utilities.Vector_Utils.dot,
-          add        = Utilities.Vector_Utils.add;
+          multiply     = Utilities.Vector_Utils.multiply,
+          divide       = Utilities.Vector_Utils.divide,
+          magnitude    = Utilities.Vector_Utils.magnitude,
+          normalize    = Utilities.Vector_Utils.normalize,
+          dot          = Utilities.Vector_Utils.dot,
+          add          = Utilities.Vector_Utils.add;
 
     let Solver = null;
 
     let self = {
       boids : [],
       particle_def: { position: {x:0,y:0}, velocity: {x:0,y:0}, forces: {x:0,y:0},
-                      length: 1.0, rotation:{pitch:0, yaw:0, roll:0}, sight: 50, mass: 1 }
+                      length: 1.0, rotation:{pitch:0, yaw:0, roll:0}, sight: 75, mass: 1, maxSpeed: 4, maxForce: 0.2 }
     };
 
     /* Initialize the boids system
@@ -36,21 +36,19 @@ Assignment 3
       Utilities.Model_Utils.setParticleDefinition(self.particle_def);
       Solver = new Integration([]);
 
-      let radius = 125, center = {x:600,y:400}, toRadians = Math.PI/180.0;
+      let radius = 75, center = {x:1200,y:400}, toRadians = Math.PI/180.0;
       for(let i = 0; i < flock_size; i++){
-
-        let angle = (i * 30 * toRadians)+90*toRadians,
+        let angle = (i * 30 * toRadians),
             x = center.x + Math.cos(angle) * radius,
             y = center.y + Math.sin(angle) * radius,
-            boid = createBoid({x:x, y:y}, {x:-1, y:0});
+            boid = createBoid({x:x, y:y}, {x:-2, y:0});
         boid.name = i;
         self.boids.push(boid);
       }
     }
 
     /* Finds the closest neighbors to the current boid
-    *  Returns the indices of those neighbors
-    * */
+    *  Returns the indices of those neighbors */
     function find_closest_neighbors(boid) {
       let neighbors = [];
       for(let neighbor of self.boids) {
@@ -60,8 +58,8 @@ Assignment 3
         /* If the boid is close enough to us, add it as a neighbor*/
         if(distance < boid.sight) {
           /* Check if the neighbor is in our FOV (270 degrees -- good enough) */
-          let FOV = dot(difference(neighbor.position, boid.position), boid.velocity);
-          if(FOV > 0) {
+          let FOV = angleBetween(difference(neighbor.position, boid.position), boid.velocity);
+          if(FOV <= Math.PI/2.0) {
             neighbors.push( neighbor );
           }
         }
@@ -69,16 +67,27 @@ Assignment 3
       return neighbors;
     }
 
+    /* Steer the boid in the direction of the target vector */
+    function compute_steering_force(target_vector, boid){
+      /* Desired velocity */
+      let desired_vel = normalize(difference(target_vector,boid.position), boid.maxSpeed);
+      /* Return the normalized steering force */
+      return normalize(difference(desired_vel,boid.velocity), boid.maxForce);
+    }
+
     /* Move all boids forward in time
     *  1) Alignment (Velocity)
     *  2) Cohesion (Position)
-    *  3) Separation (Centering)
-    * */
+    *  3) Separation (Centering) */
     function compute_flocking_force(boid) {
 
       /* Find the closest neighbors */
       let neighbors = find_closest_neighbors(boid);
       /* Initiate the three rules */
+
+      // if(boid.name === 0){
+      //   console.log(neighbors)
+      // }
 
       /* Alignment -- Normalized neighbor velocity */
       let alignment  = createVec2(),
@@ -101,20 +110,20 @@ Assignment 3
         /* Separation -- repel by the neighbors position */
       }
 
-      /* Normalize the three rules based on the number of neighbors */
-      /* alignment = ||alignment_total / #neighbors|| */
-      alignment = normalize(divide(alignment, neighbors.length || 1.0));
-      /* cohesion = ||(cohesion_all / #neighbors) - boid.position||*/
-      cohesion = normalize(difference(divide(cohesion, neighbors.length || 1.0), boid.position));
+      if(neighbors.length){
+        /* Normalize the three rules based on the number of neighbors */
+        /* alignment = ||alignment_total / #neighbors|| */
 
-      /* Add the 3 flocking rules for the new velocity, then
-       * normalize the new velocity by the boids instantaneous speed */
-      let speed = magnitude(boid.velocity);
-      new_velocity = normalize(add(alignment,cohesion,separation), speed);
+        /* cohesion = ||(cohesion_all / #neighbors) - boid.position||*/
+        let target = difference(divide(cohesion,neighbors.length), boid.position),
+            steering_force = compute_steering_force(target, boid);
 
-      /* Return the resulting force */
-      /* acceleration = (velocity_new - velocity_old), force = acceleration * mass */
-      return multiply(difference(new_velocity,boid.velocity), boid.mass);
+        /* Add the 3 flocking rules for the new velocity, then
+         * normalize the new velocity by the boids instantaneous speed */
+        new_velocity = steering_force;
+      }
+      /* Return the acceleration */
+      return multiply(new_velocity, boid.mass);
     }
 
     function move_boids(dt) {
