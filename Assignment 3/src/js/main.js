@@ -95,7 +95,7 @@ Assignment 3
     canvas = document.getElementById("particleCanvas");
     ctx = canvas.getContext("2d");
 
-    Boids_Manager.initialize(10);
+    Boids_Manager.initialize(12);
 
     /* Add the click listener */
     // canvas.addEventListener("click", mouseClickCB);

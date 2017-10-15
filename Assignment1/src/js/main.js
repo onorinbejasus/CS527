@@ -9,7 +9,11 @@ Assignment 1
   let
       particles = [],
       canvas, ctx, animation_then, calculate_then,
-      background = "rgba(238,238,238,0.4)";
+      background = "rgba(238,238,238,0.4)",
+      particle_def = { position:{x:0,y:0}, velocity:{x:0,y:0}, forces: {x:0,y:0}, mass: 1.0/*kg*/, radius: 25.0,/*cm*/
+         motion: true, collision: false, deformation : 50.0 };
+
+  Utilities.Model_Utils.setParticleDefinition(particle_def);
 
   let objects = [{
     name: "floor", type: "wall", position: {x:0, y:1000}, normal: {x: 0, y:1}

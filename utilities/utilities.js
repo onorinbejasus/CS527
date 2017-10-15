@@ -6,17 +6,14 @@ File: utilities.js
 "use strict";
 const Utilities = function(){
   /* Global Definitions */
-  const FLOOR_RESTITUTION  = 0.7;
-  let particle_def = { position:{x:0,y:0}, velocity:{x:0,y:0}, forces: {x:0,y:0}, mass: 1.0/*kg*/, radius: 25.0,/*cm*/
-                          motion: true, collision: false, deformation : 50.0 };
-  return {
-    /* Vector Math Utilities */
-    Vector_Utils: function() {
-      return {
+  const FLOOR_RESTITUTION  = 0.7, DEFAULT_VALUE = 1.0;
+  let particle_def = { position:{x:0,y:0}, velocity:{x:0,y:0}, forces: {x:0,y:0}, mass: 1.0/*kg*/, radius: 25.0};
 
+    /* Vector Math Utilities */
+    let Vector_Utils =  function() {
+      return {
         /* Create a 2D empty vector */
         create_vector() { return {x:0,y:0} },
-
         /* Add all components of a and b*/
         add: function(a, ...b) {
           let c = {};
@@ -39,6 +36,23 @@ const Utilities = function(){
             }
           });
           return c;
+        },
+
+        /* Normalize the vector */
+        normalize: function(a,b) {
+          let c = {},
+              magnitude = Vector_Utils.magnitude(a);
+          _.keys(a).forEach(function(key){
+            c[key] = a[key] / (magnitude || DEFAULT_VALUE) * (b || DEFAULT_VALUE);
+          });
+          return c;
+        },
+
+        /* Angle between vectors a and b */
+        angleBetween: function(a,b) {
+          let a_mag = Vector_Utils.magnitude(a),
+              b_mag = Vector_Utils.magnitude(b);
+          return Math.acos( Vector_Utils.divide(Vector_Utils.dot(a,b), a_mag*b_mag) );
         },
 
         /* Multiple all components of a with s */
@@ -94,7 +108,7 @@ const Utilities = function(){
 
         /* Get the magnitude of the vector */
         magnitude: function(a) {
-          return Math.sqrt(Utilities.Vector_Utils.dot(a,a));
+          return Math.sqrt(Vector_Utils.dot(a,a));
         },
 
         /* Get the magnitude of the vector */
@@ -125,10 +139,10 @@ const Utilities = function(){
           return c;
         },
       }
-    }(),
+    }();
 
     /* Utilities for checking model conditions and create elements */
-    Model_Utils : function() {
+    let Model_Utils = function() {
         return {
 
           setParticleDefinition: function(def){
@@ -141,11 +155,11 @@ const Utilities = function(){
 
               let e = particle.radius,
               c = Utilities.Vector_Utils.dot(
-                Utilities.Vector_Utils.subtract(particle.position, o.position),
-                Utilities.Vector_Utils.multiply_components(o.normal, {x:1, y:Y_UP})),
+                Vector_Utils.subtract(particle.position, o.position),
+                Vector_Utils.multiply_components(o.normal, {x:1, y:Y_UP})),
 
               v = Utilities.Vector_Utils.dot(
-                particle.velocity, Utilities.Vector_Utils.multiply_components(o.normal, {x:1, y:Y_UP})
+                particle.velocity, Vector_Utils.multiply_components(o.normal, {x:1, y:Y_UP})
               );
 
               /* Check if a collision occurred */
@@ -192,7 +206,8 @@ const Utilities = function(){
             return particle;
           }
         }
-    }()
-  };
+    }();
+
+  return { Vector_Utils: Vector_Utils, Model_Utils: Model_Utils };
 
 }();

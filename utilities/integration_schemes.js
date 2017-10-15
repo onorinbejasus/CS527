@@ -23,11 +23,10 @@ let Integration = function(CONSTANT_FORCES){
     /* Clear the previous forces */
     p.forces = Utilities.Vector_Utils.zero(p.forces);
     /* Accumulate the constant forces */
-
     for(let force of _.flatten([CONSTANT_FORCES, other_forces])){
       p.forces = add(p.forces, force(p));
     }
-
+    /* return the acceleration*/
     return divide(p.forces,p.mass);
   }
 
