@@ -26,7 +26,7 @@ Assignment 3
       boids : [],
       particle_def: { position: {x:0,y:0}, velocity: {x:0,y:0}, forces: {x:0,y:0},
                       length: 1.0, rotation:{pitch:0, yaw:0, roll:0}, sight: 50, mass: 1,
-                      separation: 30.0, maxSpeed: 2, maxForce: 0.3, name: -1}
+                      separation: 30.0, maxSpeed: 2, maxForce: 0.03, name: -1}
     };
 
     function randomDirection() { return (Math.floor(Math.random() * 201) - 100) / 100.0; }
@@ -53,16 +53,24 @@ Assignment 3
     function find_closest_neighbors(boid) {
       let neighbors = [];
       for(let neighbor of self.boids) {
-        if(boid === neighbor) continue;
+        if(boid.name === neighbor.name) continue;
         /* Calculate the distance */
         let distance = magnitude(difference(neighbor.position,boid.position));
         /* If the boid is close enough to us, add it as a neighbor*/
         if(distance < boid.sight) {
-          /* Check if the neighbor is in our FOV (270 degrees -- good enough) */
-          let FOV = angleBetween(difference(neighbor.position, boid.position), boid.velocity);
-          if(FOV <= Math.PI/2.0) {
-            neighbors.push( neighbor );
-          }
+          neighbors.push(neighbor);
+          // /* Check if the neighbor is in our FOV (270 degrees -- good enough) */
+          // let diff = difference(neighbor.position, boid.position);
+          // /* Point is right on top of the neighbor */
+          // if(magnitude(diff) === 0){
+          //   neighbors.push( neighbor );
+          // }
+          // else {
+          //   let FOV = angleBetween(diff, boid.velocity);
+          //   if(FOV <= Math.PI/2.0) {
+          //     neighbors.push( neighbor );
+          //   }
+          // }
         }
       }
       return neighbors;
@@ -118,7 +126,7 @@ Assignment 3
         /* Normalize the three rules based on the number of neighbors */
         separation = divide(separation,separationCount||1.0);
         alignment  = divide(alignment,neighbors.length);
-        cohesion   = divide(cohesion,neighbors.length);
+        //cohesion   = divide(cohesion,neighbors.length);
 
         let separation_force = compute_steering_force(separation, boid);
         /* Weight the separation higher to prioritize it*/
