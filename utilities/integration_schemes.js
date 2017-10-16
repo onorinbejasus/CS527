@@ -38,7 +38,7 @@ let Integration = function(CONSTANT_FORCES){
     /* Accumulate the forces on the particle and calculate the acceleration */
     let acceleration = clearAndAccumulateForces(p, other_forces),
         /* Calculate the new velocity */
-        d_v = add(p.velocity, multiply(acceleration, dt)),
+        d_v = limit( add(p.velocity, multiply(acceleration, dt)), p.maxSpeed),
         /* Use the new and previous velocity to calculate the new position */
         d_x = add(p.position, multiply(d_v, dt * 100.0 /* Convert back to cm */));
     /* Set the new velocity */

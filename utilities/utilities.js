@@ -42,8 +42,8 @@ const Utilities = function(){
         limit: function(a,b) {
           let c = {},
               magnitude = Vector_Utils.magnitude(a);
-          if(magnitude > (b || DEFAULT_VALUE)){
-            _.keys(a).forEach(function(key){
+          if(magnitude > 0 && magnitude > (b || DEFAULT_VALUE)){
+            _.keys(a).forEach(function(key) {
               c[key] = a[key] / (magnitude || DEFAULT_VALUE) * (b || DEFAULT_VALUE);
             });
             return c;

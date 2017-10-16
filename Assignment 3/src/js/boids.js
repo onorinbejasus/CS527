@@ -51,7 +51,8 @@ Assignment 3
     /* Finds the closest neighbors to the current boid
     *  Returns the indices of those neighbors */
     function find_closest_neighbors(boid) {
-      let neighbors = [];
+      let neighbors = [],
+          distances = [];
       for(let neighbor of self.boids) {
         if(boid.name === neighbor.name) continue;
         /* Calculate the distance */
@@ -62,16 +63,25 @@ Assignment 3
           let diff = difference(neighbor.position, boid.position);
           /* Point is right on top of the neighbor */
           if(magnitude(diff) >  0){
-          //   neighbors.push( neighbor );
-          // }
-          // else {
             let FOV = angleBetween(diff, boid.velocity);
             if(FOV <= Math.PI/2.0) {
               neighbors.push( neighbor );
+              distances.push(distance);
             }
           }
         }
       }
+
+      /* Only consider the 4 closest neighbors */
+      if(neighbors.length > 4){
+        /* LoDash Magic */
+        neighbors = _.chain(distances)
+          .toPairs().sortBy(1)
+          .map(function (i) { return neighbors[i[0]]; })
+          .value().slice(0,4);
+        console.log();
+      }
+
       return neighbors;
     }
 
