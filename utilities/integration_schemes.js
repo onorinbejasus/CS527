@@ -88,7 +88,7 @@ let Integration = function(CONSTANT_FORCES){
     acceleration = clearAndAccumulateForces(p3,other_forces);
     /* K4 -- Last Midpoint */
     let k4 = multiply(acceleration,dt),
-        /* Midpoint velocity: d_v3 = dt * (v0 + k3) */
+    /* Midpoint velocity: d_v3 = dt * (v0 + k3) */
         dv_4 = add(p.velocity, k3);
 
     /* Set the new position */
