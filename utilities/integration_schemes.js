@@ -17,6 +17,7 @@ let Integration = function(CONSTANT_FORCES){
         add = Utilities.Vector_Utils.add,
         divide = Utilities.Vector_Utils.divide,
         shift_divide = Utilities.Vector_Utils.shift_divide,
+        limit = Utilities.Vector_Utils.limit,
         create_particle = Utilities.Model_Utils.createParticle;
 
   function clearAndAccumulateForces(p,other_forces) {
@@ -50,7 +51,8 @@ let Integration = function(CONSTANT_FORCES){
   function RK4(p, dt, forces) {
     /* Check to see if any non-constant forces were passed */
     let other_forces = forces || [];
-
+    /*dt * conversion m->cm*/
+    let dt_cm = dt * 100.0;
     /* Calculate the initial acceleration */
     let acceleration = clearAndAccumulateForces(p,other_forces);
     /* K1 -- Euler */
@@ -58,9 +60,9 @@ let Integration = function(CONSTANT_FORCES){
         /* Save k1/2.0 for later use */
         k1over2 = shift_divide(k1),
         /* Euler Velocity = v*dt */
-        d_v1 = multiply(p.velocity, dt, 100.0 /*m->cm*/),
+        dv_1 = p.velocity,
         /* Calculate the euler midpoint position: p1 = p0 * (v*dt)/2.0 */
-        p1 = create_particle( add(p.position, shift_divide(d_v1)) );
+        p1 = create_particle( add(p.position, shift_divide(multiply(dv_1,dt_cm))),dv_1, p.name );
 
     /* Calculate the acceleration at the Euler position */
     acceleration = clearAndAccumulateForces(p1,other_forces);
@@ -69,44 +71,43 @@ let Integration = function(CONSTANT_FORCES){
         /* Save k2/2.0 for later use */
         k2over2 = shift_divide(k2),
         /* Midpoint velocity: d_v2 = dt * (v0 + k1/2.0) */
-        dv_2 = multiply(add(p.velocity, k1over2), dt, 100.0 /*m->cm*/),
+        dv_2 = add(p.velocity, k1over2),
         /* Calculate the midpoint position: p2 = p0 * (v*dt)/2.0 */
-        p2 = create_particle( add(p.position, shift_divide(dv_2)) );
+        p2 = create_particle( add(p.position, shift_divide(multiply(dv_2,dt_cm))),dv_2, p.name );
 
     /* Calculate the acceleration at the first midpoint position */
     acceleration = clearAndAccumulateForces(p2,other_forces);
     /* K3 -- Second Midpoint */
     let k3 = multiply(acceleration,dt),
         /* Midpoint velocity: d_v3 = dt * (v0 + k2) */
-        dv_3 = multiply( add(p.velocity, k2over2), dt, 100.0 /*m->cm*/),
+        dv_3 = add(p.velocity, k2over2),
         /* Calculate the midpoint position: p2 = p0 * (v*dt)/2.0 */
-        p3 = create_particle( add(p.position, dv_3) );
+        p3 = create_particle( add(p.position, multiply(dv_3,dt_cm)),dv_3, p.name );
 
     /* Calculate the acceleration at the last midpoint */
     acceleration = clearAndAccumulateForces(p3,other_forces);
     /* K4 -- Last Midpoint */
     let k4 = multiply(acceleration,dt),
         /* Midpoint velocity: d_v3 = dt * (v0 + k3) */
-        dv_4 = multiply( add(p.velocity, k3), dt, 100.0 /*m->cm*/);
+        dv_4 = add(p.velocity, k3);
 
     /* Set the new position */
-    p.position = add(p.position,
-                      multiply(d_v1, 0.16667),
-                      multiply(dv_2, 0.33334),
-                      multiply(dv_3, 0.33334),
-                      multiply(dv_4, 0.16667));
+    let dvt = add(multiply(dv_1, 0.16667),
+                  multiply(dv_2, 0.33334),
+                  multiply(dv_3, 0.33334),
+                  multiply(dv_4, 0.16667));
+
+    p.position = add(p.position, multiply(dvt,dt_cm));
 
     /* Set the new velocity */
-    p.velocity = add(p.velocity,
-                        multiply(k1, 0.16667),
-                        multiply(k2, 0.33334),
-                        multiply(k3, 0.33334),
-                        multiply(k4, 0.16667));
-  }
-
-  /* Verlet Integration */
-  function verlet() {
-
+    p.velocity = limit(
+        add(p.velocity,
+            multiply(k1, 0.16667),
+            multiply(k2, 0.33334),
+            multiply(k3, 0.33334),
+            multiply(k4, 0.16667)
+        ), p.maxSpeed)
+    ;
   }
 
   return {

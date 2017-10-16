@@ -35,30 +35,11 @@ Assignment 3
   }
 
   function derivativeEval(dt) {
-    /* iterate over each particle */
-    particles.forEach(function(p){
-      if(p.motion){
-        /* Integrate */
-        Integration.RK4_step(p, dt);
-      }
-    });
+
   }
 
   function calculateNextStep(interval) {
-    // request another frame
-    requestAnimationFrame(calculateNextStep.bind(null,interval));
 
-    // calculate elapsed time since last loop
-    let now = Date.now(),
-        elapsed = now - calculate_then;
-
-    // if enough time has elapsed, draw the next frame
-    if (elapsed > interval) {
-      computation_count++;
-      calculate_then = now - (elapsed % interval);
-      /* Evaluate the derivative */
-      derivativeEval(elapsed/1000);
-    }
   }
 
   /* based on the request animation example here: http://jsfiddle.net/m1erickson/CtsY3/*/
@@ -95,7 +76,7 @@ Assignment 3
     canvas = document.getElementById("particleCanvas");
     ctx = canvas.getContext("2d");
 
-    Boids_Manager.initialize(8);
+    Boids_Manager.initialize(50);
 
     /* Add the click listener */
     // canvas.addEventListener("click", mouseClickCB);

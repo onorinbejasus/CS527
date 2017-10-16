@@ -39,6 +39,18 @@ const Utilities = function(){
         },
 
         /* Normalize the vector */
+        limit: function(a,b) {
+          let c = {},
+              magnitude = Vector_Utils.magnitude(a);
+          if(magnitude > (b || DEFAULT_VALUE)){
+            _.keys(a).forEach(function(key){
+              c[key] = a[key] / (magnitude || DEFAULT_VALUE) * (b || DEFAULT_VALUE);
+            });
+            return c;
+          }
+          return a;
+        },
+
         normalize: function(a,b) {
           let c = {},
               magnitude = Vector_Utils.magnitude(a);
@@ -193,7 +205,7 @@ const Utilities = function(){
 
             });
           },
-          createParticle: function(position, velocity) {
+          createParticle: function(position, velocity,name) {
             /* Clone the particle template*/
             let particle = _.cloneDeep(particle_def);
             /* Set the position and velocity if supplied */
@@ -202,6 +214,9 @@ const Utilities = function(){
             }
             if(velocity){
               particle.velocity = velocity;
+            }
+            if(name){
+              particle.name = name;
             }
             return particle;
           }
