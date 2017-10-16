@@ -25,8 +25,8 @@ Assignment 3
     let self = {
       boids : [],
       particle_def: { position: {x:0,y:0}, velocity: {x:0,y:0}, forces: {x:0,y:0},
-                      length: 1.0, rotation:{pitch:0, yaw:0, roll:0}, sight: 50, mass: 1,
-                      separation: 30.0, maxSpeed: 2, maxForce: 0.3, name: -1}
+                      length: 1.0, rotation:{pitch:0, yaw:0, roll:0}, sight: 75, mass: 1,
+                      separation: 30.0, maxSpeed: 2, maxForce: 0.03, name: -1}
     };
 
     function randomDirection() { return (Math.floor(Math.random() * 201) - 100) / 100.0; }
@@ -58,14 +58,13 @@ Assignment 3
         let distance = magnitude(difference(neighbor.position,boid.position));
         /* If the boid is close enough to us, add it as a neighbor*/
         if(distance < boid.sight) {
-          neighbors.push(neighbor);
           /* Check if the neighbor is in our FOV (270 degrees -- good enough) */
           let diff = difference(neighbor.position, boid.position);
           /* Point is right on top of the neighbor */
-          if(magnitude(diff) === 0){
-            neighbors.push( neighbor );
-          }
-          else {
+          if(magnitude(diff) >  0){
+          //   neighbors.push( neighbor );
+          // }
+          // else {
             let FOV = angleBetween(diff, boid.velocity);
             if(FOV <= Math.PI/2.0) {
               neighbors.push( neighbor );
@@ -77,11 +76,11 @@ Assignment 3
     }
 
     /* Steer the boid in the direction of the target vector */
-    function compute_steering_force(target_vector, boid){
+    function compute_seeking_force(target_vector, boid){
       /* Desired velocity */
-      let desired_vel = normalize(target_vector, boid.maxSpeed);
+      let desired_vel = normalize(target_vector,boid.maxSpeed);
       /* Return the normalized steering force */
-      return limit(difference(desired_vel,boid.velocity), boid.maxForce);
+      return difference(desired_vel,boid.velocity);
     }
 
     /* Move all boids forward in time
@@ -100,13 +99,14 @@ Assignment 3
           /* Cohesion -- Normalized neighbor position */
           cohesion   = createVec2(),
           /* New velocity -- The combined velocity rules */
-          new_velocity = createVec2();
+          desired_velocity = createVec2();
 
       /* Iterate over the neighbors and calculate the separation, cohesion, and alignment */
       for(let neighbor of neighbors){
         /* Separation -- repel by the neighbors position */
         let target = difference(boid.position,neighbor.position),
             distance = magnitude(target);
+
         /* We want to check the max separation */
         if(distance > 0 && distance < boid.separation){
           /* Weight the target vector by the distance from the current boid */
@@ -116,8 +116,9 @@ Assignment 3
           /* Increment the separation count */
           separationCount++;
         }
+
         /* Alignment -- Add the neighbors velocity */
-        alignment = add(alignment, boid.velocity);
+        alignment = add(alignment, neighbor.velocity);
         /* Cohesion -- Add the neighbors position */
         cohesion = add(cohesion, neighbor.position);
       }
@@ -128,30 +129,33 @@ Assignment 3
         alignment  = divide(alignment,neighbors.length);
         cohesion   = divide(cohesion,neighbors.length);
 
-        let separation_force = compute_steering_force(separation, boid);
+        let separation_force = compute_seeking_force(separation, boid);
+        //separation_force = difference(separation_force, boid.velocity);
+
         /* Weight the separation higher to prioritize it*/
-        separation = multiply(separation, 1.5);
+        separation_force = multiply(separation_force, 1.5);
 
         let cohesion_target = difference(cohesion, boid.position),
-            cohesive_force = compute_steering_force(cohesion_target, boid);
+          cohesive_force = compute_seeking_force(cohesion_target, boid);
+          //cohesive_force = normalize(cohesion_target, boid.maxSpeed);//compute_steering_force(cohesion_target, boid);
+            //cohesive_force = difference(cohesive_force, boid.velocity);
 
-        //let alignment_force = compute_steering_force(alignment, boid);
+        let alignment_force = compute_seeking_force(alignment, boid);
+            //alignment_force = difference(alignment_force, boid.velocity);
 
-        /* Add the 3 flocking rules for the new velocity, then
-         * normalize the new velocity by the boids instantaneous speed */
-        new_velocity = add(limit(add(cohesion, alignment)), separation);// limit(add(separation_force, cohesive_force, alignment_force), boid.maxForce);
+        let seeking = compute_seeking_force( difference({ x:0, y: 0 }, boid.position), boid );
+          /* Add the 3 flocking rules for the new velocity, then
+           * normalize the new velocity by the boids instantaneous speed */
+        desired_velocity  = add(separation_force, cohesive_force, alignment_force, seeking);
       }
       /* Return the acceleration */
-      return multiply(new_velocity, boid.mass);
+      return desired_velocity;
     }
 
     function flock(dt) {
       for(let boid of self.boids) {
         /* Step forward in time */
-        Solver.RK4_step(boid, dt,[compute_flocking_force]);
-
-        /* make sure the boid keeps moving */
-        //boid.velocity = limit(boid.velocity,boid.maxSpeed);
+        Solver.euler_step(boid, dt,[compute_flocking_force]);
 
         if(boid.position.x <= -7.5){
           // console.log(boid.position.x);
@@ -178,7 +182,7 @@ Assignment 3
         /* Save the context state*/
         ctx.save();
         let width = 15, height = 10,
-            angle = angleBetween({x:1,y:0},boid.velocity);
+            angle = angleBetween({x:0,y:0},boid.velocity);
         ctx.translate(boid.position.x+width/2, boid.position.y-height/2, width, height);
         ctx.rotate(angle);
         ctx.fillRect(-width/2, -height/2, width, height);

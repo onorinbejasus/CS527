@@ -32,9 +32,11 @@ let Integration = function(CONSTANT_FORCES){
   }
 
   /* Euler Integration */
-  function euler(p,dt) {
+  function euler(p,dt,forces) {
+    /* Check to see if any non-constant forces were passed */
+    let other_forces = forces || [];
     /* Accumulate the forces on the particle and calculate the acceleration */
-    let acceleration = clearAndAccumulateForces(p),
+    let acceleration = clearAndAccumulateForces(p, other_forces),
         /* Calculate the new velocity */
         d_v = add(p.velocity, multiply(acceleration, dt)),
         /* Use the new and previous velocity to calculate the new position */
