@@ -75,11 +75,11 @@ Assignment 3
       /* Only consider the 4 closest neighbors */
       if(neighbors.length > 4){
         /* LoDash Magic */
-        neighbors = _.chain(distances)
-          .toPairs().sortBy(1)
-          .map(function (i) { return neighbors[i[0]]; })
-          .value().slice(0,4);
-        console.log();
+        // neighbors = _.chain(distances)
+        //   .toPairs().sortBy(1)
+        //   .map(function (i) { return neighbors[i[0]]; })
+        //   .value().slice(0,4);
+        // console.log();
       }
 
       return neighbors;
