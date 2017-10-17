@@ -205,7 +205,7 @@ const Utilities = function(){
 
             });
           },
-          createParticle: function(position, velocity,name) {
+          createParticle: function(position,velocity,name,bin) {
             /* Clone the particle template*/
             let particle = _.cloneDeep(particle_def);
             /* Set the position and velocity if supplied */
@@ -217,6 +217,9 @@ const Utilities = function(){
             }
             if(name){
               particle.name = name;
+            }
+            if(bin){
+              particle.bin = bin;
             }
             return particle;
           }

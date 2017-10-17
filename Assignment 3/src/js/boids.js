@@ -23,13 +23,17 @@ Assignment 3
     let Solver = null;
 
     let self = {
-      boids : [],
+      height: 1200, width: 1600, binSize:50, width_binSize:1600/50, height_binSize:1200/50,
+      boids : [], bins: [],
       particle_def: { position: {x:0,y:0}, velocity: {x:0,y:0}, forces: {x:0,y:0},
-                      length: 1.0, rotation:{pitch:0, yaw:0, roll:0}, sight: 75, mass: 1,
-                      separation: 30.0, maxSpeed: 2, maxForce: 0.03, name: -1}
+                      length: 1.0, rotation:{pitch:0, yaw:0, roll:0}, sight: 50, mass: 1,
+                      separation: 30.0, maxSpeed: 2, maxForce: 0.03, name: -1, bin: -1}
     };
 
     function randomDirection() { return (Math.floor(Math.random() * 201) - 100) / 100.0; }
+    function computeIndex(x,y) {
+      return parseInt(y/self.binSize) + self.width_binSize * parseInt(x/self.binSize);
+    }
 
     /* Initialize the boids system
      *  1) Create the boid particles */
@@ -37,13 +41,16 @@ Assignment 3
       Utilities.Model_Utils.setParticleDefinition(self.particle_def);
       Solver = new Integration([]);
 
-      let radius = 20, center = {x:1200,y:600}, toRadians = Math.PI/180.0;
+      for(let w = 0; w <= self.width_binSize; w++){
+        for(let h = 0; h <= self.height_binSize; h++){
+          self.bins.push([]);
+        }
+      }
+
+     let center = {x:1200,y:600}, toRadians = Math.PI/180.0, initial_bin = computeIndex(center.x, center.y);
       for(let i = 0; i < flock_size; i++){
-        let
-            // angle = (i * 30 * toRadians),
-            // x = center.x + Math.cos(angle) * radius,
-            // y = center.y + Math.sin(angle) * radius,
-            boid = createBoid(center, {x:randomDirection(), y:randomDirection()}, "boid_"+i);
+        let boid = createBoid(center, {x:randomDirection(), y:randomDirection()}, "boid_"+i, initial_bin);
+        self.bins[initial_bin].push(boid);
         self.boids.push(boid);
       }
     }
@@ -52,8 +59,17 @@ Assignment 3
     *  Returns the indices of those neighbors */
     function find_closest_neighbors(boid) {
       let neighbors = [],
-          distances = [];
-      for(let neighbor of self.boids) {
+          distances = [],
+          index = parseInt(boid.position.x/self.binSize) + self.width_binSize * parseInt(boid.position.y/self.binSize),
+          neighbor_subset = [ self.bins[index] ];
+
+      if(index+1 < self.bins.length) neighbor_subset.push(self.bins[index+1]);
+      if(index+self.width_binSize < self.bins.length) neighbor_subset.push(self.bins[index+self.width_binSize]);
+      if(index > 0) neighbor_subset.push(self.bins[index-1]);
+      if(index-self.width_binSize > -1) neighbor_subset.push(self.bins[index-self.width_binSize]);
+
+
+      for(let neighbor of _.flatten(neighbor_subset)) {
         if(boid.name === neighbor.name) continue;
         /* Calculate the distance */
         let distance = magnitude(difference(neighbor.position,boid.position));
@@ -73,13 +89,12 @@ Assignment 3
       }
 
       /* Only consider the 4 closest neighbors */
-      if(neighbors.length > 4){
+      if(neighbors.length > 10){
         /* LoDash Magic */
-        // neighbors = _.chain(distances)
-        //   .toPairs().sortBy(1)
-        //   .map(function (i) { return neighbors[i[0]]; })
-        //   .value().slice(0,4);
-        // console.log();
+        neighbors = _.chain(distances)
+          .toPairs().sortBy(1)
+          .map(function (i) { return neighbors[i[0]]; })
+          .value().slice(0,10);
       }
 
       return neighbors;
@@ -126,7 +141,6 @@ Assignment 3
           /* Increment the separation count */
           separationCount++;
         }
-
         /* Alignment -- Add the neighbors velocity */
         alignment = add(alignment, neighbor.velocity);
         /* Cohesion -- Add the neighbors position */
@@ -139,33 +153,24 @@ Assignment 3
         alignment  = divide(alignment,neighbors.length);
         cohesion   = divide(cohesion,neighbors.length);
 
-        let separation_force = compute_seeking_force(separation, boid);
-        //separation_force = difference(separation_force, boid.velocity);
+        /* Calculate the velocities */
+        let separation_force = compute_seeking_force(separation, boid),
+            cohesion_target = difference(cohesion, boid.position),
+            cohesive_force = compute_seeking_force(cohesion_target, boid),
+            alignment_force = compute_seeking_force(alignment, boid);
 
-        /* Weight the separation higher to prioritize it*/
-        separation_force = multiply(separation_force, 1.5);
-
-        let cohesion_target = difference(cohesion, boid.position),
-          cohesive_force = compute_seeking_force(cohesion_target, boid);
-          //cohesive_force = normalize(cohesion_target, boid.maxSpeed);//compute_steering_force(cohesion_target, boid);
-            //cohesive_force = difference(cohesive_force, boid.velocity);
-
-        let alignment_force = compute_seeking_force(alignment, boid);
-            //alignment_force = difference(alignment_force, boid.velocity);
-
-        let seeking = compute_seeking_force( difference({ x:0, y: 0 }, boid.position), boid );
-          /* Add the 3 flocking rules for the new velocity, then
-           * normalize the new velocity by the boids instantaneous speed */
-        desired_velocity  = add(separation_force, cohesive_force, alignment_force, seeking);
+        let seeking = compute_seeking_force( difference({x:0, y: 0}, boid.position), boid);
+          /* Add the 3 flocking rules for the new velocity */
+        desired_velocity  = add(multiply(separation_force, 1.5), cohesive_force, alignment_force, seeking);
       }
       /* Return the acceleration */
-      return desired_velocity;
+      return multiply(desired_velocity, boid.mass);
     }
 
     function flock(dt) {
       for(let boid of self.boids) {
         /* Step forward in time */
-        Solver.euler_step(boid, dt,[compute_flocking_force]);
+        Solver.RK4_step(boid, dt,[compute_flocking_force]);
 
         if(boid.position.x <= -7.5){
           // console.log(boid.position.x);
@@ -181,6 +186,16 @@ Assignment 3
         else if(boid.position.y > 1205){
           boid.position.y = boid.position.y - 1200;
         }
+
+        /* Get the indices */
+        let boid_index = self.bins[boid.bin].indexOf(boid),
+            new_bin = parseInt(boid.position.x/self.binSize) + self.width_binSize * parseInt(boid.position.y/self.binSize);
+        /* Remove the element from the old bin, place it in the new one */
+        if (boid_index > -1) {
+          self.bins[boid.bin].splice(boid_index, 1);
+        }
+        boid.bin = new_bin;
+        self.bins[new_bin].push(boid);
 
       }}
 
@@ -200,6 +215,18 @@ Assignment 3
         ctx.restore();
       }
 
+      for(let i = 0; i < self.width; i+=50){
+        ctx.beginPath();
+        ctx.moveTo(i,0);
+        ctx.lineTo(i,self.height);
+        ctx.stroke();
+      }
+      for(let j = 0; j < self.height; j+=50){
+        ctx.beginPath();
+        ctx.moveTo(0,j);
+        ctx.lineTo(self.width,j);
+        ctx.stroke();
+      }
     }
 
     return {
