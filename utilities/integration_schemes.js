@@ -18,7 +18,7 @@ let Integration = function(CONSTANT_FORCES){
         divide = Utilities.Vector_Utils.divide,
         shift_divide = Utilities.Vector_Utils.shift_divide,
         limit = Utilities.Vector_Utils.limit,
-        create_particle = Utilities.Model_Utils.createParticle;
+        create_particle = Utilities.Model_Utils.createParticle3D;
 
   function clearAndAccumulateForces(p,other_forces,dt) {
     /* Clear the previous forces */

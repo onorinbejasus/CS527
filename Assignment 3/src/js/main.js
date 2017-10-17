@@ -7,27 +7,15 @@ Assignment 3
 "use strict";
 (function(){
   let
-      particles = [],
-      canvas, ctx, animation_then, calculate_then,
-      background = "rgba(238,238,238,0.4)";
+      animation_then, calculate_then,
+      camera, controls, scene, renderer;
 
-  let animation_count = 0,
-      computation_count = 0;
-
-  let motion_blur = false;
-
-  function mouseClickCB(e) {
-    /* Clone the particle template */
-    //let p = Utilities.Model_Utils.createParticle( {position:{x:e.x, y:e.y}} );
-    /* Add the particle to the list */
-    //particles.push(p);
-  }
+  let animation_count = 0;
 
   function render(){
-    /* Clear the canvas s*/
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
     /* Render the scene */
-    Boids_Manager.render(ctx);
+    Boids_Manager.render(scene);
+    renderer.render(scene, camera);
   }
 
   /* based on the request animation example here: http://jsfiddle.net/m1erickson/CtsY3/*/
@@ -45,7 +33,6 @@ Assignment 3
       // Get ready for next frame by setting then=now, but...
       animation_then = now - (elapsed % interval);
 
-      //calculateNextStep(elapsed/1e3);
       Boids_Manager.navigate(elapsed/1e3);
 
       /* Render the scene */
@@ -60,17 +47,46 @@ Assignment 3
   }
 
   function initialize() {
-    /* Setup the canvas */
-    canvas = document.getElementById("particleCanvas");
-    ctx = canvas.getContext("2d");
 
-    Boids_Manager.initialize(25);
+    camera = new THREE.PerspectiveCamera( 60, window.innerWidth / window.innerHeight, 1, 10000 );
+    camera.position.set( 715, 390, 458 );
 
-    /* Add the click listener */
-    // canvas.addEventListener("click", mouseClickCB);
+    controls = new THREE.OrbitControls( camera );
+    controls.minDistance = 100;
+    controls.maxDistance = 1500;
 
-    /* Begin animation */
-    setAnimationIntervals(64, animate);
+    scene = new THREE.Scene();
+    scene.background = new THREE.Color( 0xeeeeee );
+
+
+    // renderer
+    renderer = new THREE.WebGLRenderer( { canvas: document.getElementById("particleCanvas"), antialias: true } );
+    renderer.setPixelRatio( window.devicePixelRatio );
+    renderer.setSize( window.innerWidth, window.innerHeight );
+
+    /* Grid Floor*/
+    let grid = new THREE.GridHelper( 800, 10 );
+    let axis = new THREE.AxisHelper(50);
+    scene.add( grid );
+    scene.add( axis );
+
+    Boids_Manager.initialize(25, scene).then(function(){
+      /* begin animating the scene */
+      setAnimationIntervals(60, animate);
+    });
+
+    document.body.appendChild( renderer.domElement );
+
+    window.addEventListener( 'resize', onWindowResize, false );
+
+  }
+
+  function onWindowResize() {
+
+    camera.aspect = window.innerWidth / window.innerHeight;
+    camera.updateProjectionMatrix();
+
+    renderer.setSize( window.innerWidth, window.innerHeight );
   }
 
   /* start the application once the DOM is ready */

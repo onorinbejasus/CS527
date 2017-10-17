@@ -9,8 +9,8 @@ Assignment 3
   const Boids_Manager = function() {
 
     /* Convenience utility function references */
-    const createBoid   = Utilities.Model_Utils.createParticle,
-          createVec2   = Utilities.Vector_Utils.create_vector,
+    const createBoid   = Utilities.Model_Utils.createParticle3D,
+          createVec   = Utilities.Vector_Utils.create_vector,
           difference   = Utilities.Vector_Utils.subtract,
           angleBetween = Utilities.Vector_Utils.angleBetween,
           multiply     = Utilities.Vector_Utils.multiply,
@@ -27,9 +27,9 @@ Assignment 3
     let self = {
       height: 1200, width: 1600, binSize:50, width_binSize:1600/50, height_binSize:1200/50,
       boids : [], bins: [],
-      particle_def: { position: {x:0,y:0}, velocity: {x:0,y:0}, forces: {x:0,y:0},
-                      length: 1.0, rotation:{pitch:0, yaw:0, roll:0}, sight: 50, mass: 1,
-                      separation: 30.0, maxSpeed: 2, maxForce: 0.03, name: -1, bin: -1}
+      particle_def: { position: {x:0,y:0,z:0}, velocity: {x:0,y:0,z:0}, forces: {x:0,y:0,z:0},
+                      length: 10.0, rotation:{pitch:0, yaw:0, roll:0}, sight: 50, mass: 1, radius: 5,
+                      separation: 30.0, maxSpeed: 2, maxForce: 0.03, name: -1, bin: -1, model:null}
     };
 
     self.objects = [
@@ -46,23 +46,31 @@ Assignment 3
 
     /* Initialize the boids system
      *  1) Create the boid particles */
-    function initialize_system(flock_size) {
+    function initialize_system(flock_size, scene) {
       Utilities.Model_Utils.setParticleDefinition(self.particle_def);
       Solver = new Integration([]);
 
-      for(let w = 0; w <= self.width_binSize; w++){
-        for(let h = 0; h <= self.height_binSize; h++){
-          self.bins.push([]);
+      return new Promise(function(resolve, reject){
+        for(let w = 0; w <= self.width_binSize; w++){
+          for(let h = 0; h <= self.height_binSize; h++){
+            self.bins.push([]);
+          }
         }
-      }
 
-     let center = {x:400,y:1000}, toRadians = Math.PI/180.0, initial_bin = computeIndex(center.x, center.y);
-      for(let i = 0; i < flock_size; i++){
-        // let boid = createBoid(center, {x:randomDirection(), y:randomDirection()}, "boid_"+i, initial_bin);
-        let boid = createBoid(center, {x:-1, y:0}, "boid_"+i, initial_bin);
-        self.bins[initial_bin].push(boid);
-        self.boids.push(boid);
-      }
+        let center = {x:40,y:40,z:40}, initial_bin = computeIndex(center.x, center.y);
+        for(let i = 0; i < flock_size; i++){
+          let boid = createBoid(center, {x:randomDirection(), y:0, z:randomDirection()}, "boid_"+i, initial_bin);
+
+          /* Add the boid to the correct bin */
+          self.bins[initial_bin].push(boid);
+          self.boids.push(boid);
+
+          /* Add the boid to the scene */
+          scene.add(boid.model);
+        }
+        /* Done setting up */
+        resolve();
+      });
     }
 
     /* Finds the closest neighbors to the current boid
@@ -73,10 +81,12 @@ Assignment 3
           index = parseInt(boid.position.x/self.binSize) + self.width_binSize * parseInt(boid.position.y/self.binSize),
           neighbor_subset = [ self.bins[index] ];
 
-      if(index+1 < self.bins.length) neighbor_subset.push(self.bins[index+1]);
-      if(index+self.width_binSize < self.bins.length) neighbor_subset.push(self.bins[index+self.width_binSize]);
-      if(index > 0) neighbor_subset.push(self.bins[index-1]);
-      if(index-self.width_binSize > -1) neighbor_subset.push(self.bins[index-self.width_binSize]);
+      // if(index+1 < self.bins.length) neighbor_subset.push(self.bins[index+1]);
+      // if(index+self.width_binSize < self.bins.length) neighbor_subset.push(self.bins[index+self.width_binSize]);
+      // if(index > 0) neighbor_subset.push(self.bins[index-1]);
+      // if(index-self.width_binSize > -1) neighbor_subset.push(self.bins[index-self.width_binSize]);
+
+      neighbor_subset = [self.boids];
 
       for(let neighbor of _.flatten(neighbor_subset)) {
         if(boid.name === neighbor.name) continue;
@@ -119,7 +129,7 @@ Assignment 3
 
     /* Avoid an object in our direct path */
     function avoid_object(boid){
-      let force = createVec2();
+      let force = createVec();
       /* iterate over the objects and check to see if we are within striking distance */
       for(let obstacle of self.objects){
         let visible = dot(boid.velocity, obstacle.normal);
@@ -152,18 +162,22 @@ Assignment 3
       let neighbors = find_closest_neighbors(boid);
       /* Initiate the three rules */
       /* Alignment -- Normalized neighbor velocity */
-      let alignment  = createVec2(),
-          alignment_force = createVec2(),
+      let alignment  = createVec(),
+          alignment_force = createVec(),
           /* Separation -- Negated, normalized distance of boid with respect to each of its neighbors */
-          separation = createVec2(),
-          separation_force = createVec2(),
+          separation = createVec(),
+          separation_force = createVec(),
           separationCount = 0,
           /* Cohesion -- Normalized neighbor position */
-          cohesion   = createVec2(),
-          cohesion_target = createVec2(),
-          cohesive_force = createVec2(),
+          cohesion   = createVec(),
+          cohesion_target = createVec(),
+          cohesive_force = createVec(),
+
+          seeking_force = createVec(),
+          avoidance_force = createVec(),
+
           /* New velocity -- The combined velocity rules */
-          desired_velocity = createVec2();
+          desired_velocity = createVec();
 
       /* Iterate over the neighbors and calculate the separation, cohesion, and alignment */
       for(let neighbor of neighbors){
@@ -200,11 +214,14 @@ Assignment 3
       }
 
       /* Direction to seek */
-      let seeking = compute_seeking_force( difference({ x:400, y: 800 }, boid.position), boid );
-      let avoid_force = avoid_object(boid);
+      seeking_force = compute_seeking_force( difference({ x:0, y: 100, z: 0 }, boid.position), boid );
+      // avoidance_force = avoid_object(boid);
 
       /* Add the 3 flocking rules for the new velocity */
-      desired_velocity  = add(multiply(separation_force, 1.5), cohesive_force, alignment_force, multiply(seeking, 0.05), avoid_force);
+      desired_velocity  =
+        add(multiply(separation_force, 1.5),
+        cohesive_force, alignment_force,
+        multiply(seeking_force, 0.05), avoidance_force);
 
       /* Return the acceleration */
       return multiply(desired_velocity, boid.mass);
@@ -215,32 +232,28 @@ Assignment 3
         /* Step forward in time */
         Solver.RK4_step(boid, dt,[compute_flocking_force]);
 
-        if(boid.position.x <= -7.5){
-          // console.log(boid.position.x);
-          boid.position.x = 1600 - boid.position.x;
-        }
-        else if(boid.position.x > 1607){
-          boid.position.x = boid.position.x - 1600;
-        }
-
-        if(boid.position.y <= -5){
-          boid.position.y = 1200 - boid.position.y;
-        }
-        else if(boid.position.y > 1205){
-          boid.position.y = boid.position.y - 1200;
-        }
-
         /* Get the indices */
-        let boid_index = self.bins[boid.bin].indexOf(boid),
-            new_bin = parseInt(boid.position.x/self.binSize) + self.width_binSize * parseInt(boid.position.y/self.binSize);
-        /* Remove the element from the old bin, place it in the new one */
-        if (boid_index > -1) {
-          self.bins[boid.bin].splice(boid_index, 1);
-        }
-        boid.bin = new_bin;
-        self.bins[new_bin].push(boid);
+        // let boid_index = self.bins[boid.bin].indexOf(boid),
+        //     new_bin = parseInt(boid.position.x/self.binSize) + self.width_binSize * parseInt(boid.position.y/self.binSize);
+        // /* Remove the element from the old bin, place it in the new one */
+        // if (boid_index > -1) {
+        //   self.bins[boid.bin].splice(boid_index, 1);
+        // }
+        // boid.bin = new_bin;
+        // self.bins[new_bin].push(boid);
 
       }}
+
+      function render_boids_3D(){
+        /* iterate over each of the boids
+           and render a triangle around its position */
+        for(let boid of self.boids){
+          let lookAt = normalize(boid.velocity);
+          boid.model.position.set(boid.position.x,boid.position.y,boid.position.z);
+          boid.model.lookAt(new THREE.Vector3(boid.velocity.x,boid.velocity.y,boid.velocity.z));
+        }
+
+      }
 
     /* Renders the particles onto the screen */
     function render_boids_2D(ctx){
@@ -275,7 +288,7 @@ Assignment 3
     return {
       initialize: initialize_system,
       navigate: flock,
-      render: render_boids_2D
+      render: render_boids_3D
     }
 
   }();

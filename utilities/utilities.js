@@ -7,13 +7,15 @@ File: utilities.js
 const Utilities = function(){
   /* Global Definitions */
   const FLOOR_RESTITUTION  = 0.7, DEFAULT_VALUE = 1.0;
-  let particle_def = { position:{x:0,y:0}, velocity:{x:0,y:0}, forces: {x:0,y:0}, mass: 1.0/*kg*/, radius: 25.0};
+  let particle_def = { position:{x:0,y:0,z:0}, velocity:{x:0,y:0,z:0}, forces: {x:0,y:0,z:0}, mass: 1.0/*kg*/, radius: 25.0};
+  let default_material = new THREE.MeshBasicMaterial( {color: 0xff0000} );
+
 
     /* Vector Math Utilities */
     let Vector_Utils =  function() {
       return {
         /* Create a 2D empty vector */
-        create_vector() { return {x:0,y:0} },
+        create_vector() { return {x:0,y:0,z:0} },
         /* Add all components of a and b*/
         add: function(a, ...b) {
           let c = {};
@@ -201,7 +203,6 @@ const Utilities = function(){
                     Math.abs(o.position.y - particle.position.y) <= particle.radius
                 ){
                   particle.motion = false;
-                  console.log("stop");
                 }
                 else {
                   particle.motion = true;
@@ -210,27 +211,37 @@ const Utilities = function(){
 
             });
           },
-          createParticle: function(position,velocity,name,bin) {
+
+          createParticle2D: function(position,velocity,name,bin) {
             /* Clone the particle template*/
             let particle = _.cloneDeep(particle_def);
-            /* Set the position and velocity if supplied */
-            if(position){
-              particle.position = position;
-            }
-            if(velocity){
-              particle.velocity = velocity;
-            }
-            if(name){
-              particle.name = name;
-            }
-            if(bin){
-              particle.bin = bin;
-            }
+            /* Set the particle attributes */
+            particle.position = position || Vector_Utils.create_vector();
+            particle.velocity = velocity || Vector_Utils.create_vector();
+            particle.name = name || "";
+            particle.bin = bin || -1;
+
+            return particle;
+          },
+
+          createParticle3D: function(position,velocity,name,bin) {
+            /* Clone the particle template*/
+            let particle = _.cloneDeep(particle_def);
+            /* Set the particle attributes */
+            particle.position = position || Vector_Utils.create_vector();
+            particle.velocity = velocity || Vector_Utils.create_vector();
+            particle.name = name || "";
+            particle.bin = bin || -1;
+
+            /* Create the boid model */
+            let geometry = new THREE.ConeGeometry(particle.radius, particle.length, 32 );
+            particle.model = new THREE.Mesh( geometry, default_material );
+            particle.model.position.set(position.x,position.y,position.z);
+
             return particle;
           }
         }
     }();
 
   return { Vector_Utils: Vector_Utils, Model_Utils: Model_Utils };
-
 }();
