@@ -65,9 +65,12 @@ Assignment 3
     renderer.setSize( window.innerWidth, window.innerHeight );
 
     /* Grid Floor*/
-    let grid = new THREE.GridHelper( 800, 10 );
+    let floor = new THREE.GridHelper( 800, 10 );
+    let ceiling = new THREE.GridHelper( 800, 10 );
+    // celing
     let axis = new THREE.AxisHelper(50);
-    scene.add( grid );
+    scene.add( floor );
+    // scene.add( ceiling );
     scene.add( axis );
 
     Boids_Manager.initialize(25, scene).then(function(){

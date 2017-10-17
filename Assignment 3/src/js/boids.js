@@ -17,11 +17,8 @@ Assignment 3
           multiply_components     = Utilities.Vector_Utils.multiply_components,
           divide       = Utilities.Vector_Utils.divide,
           limit       = Utilities.Vector_Utils.limit,
-          shift_divide = Utilities.Vector_Utils.shift_divide,
           magnitude    = Utilities.Vector_Utils.magnitude,
           normalize    = Utilities.Vector_Utils.normalize,
-          rotate2D    = Utilities.Vector_Utils.rotate2D,
-          rotateArbAxis    = Utilities.Vector_Utils.rotateArbAxis,
           add          = Utilities.Vector_Utils.add,
           dot          = Utilities.Vector_Utils.dot;
 
@@ -270,9 +267,13 @@ Assignment 3
         /* iterate over each of the boids
            and render a triangle around its position */
         for(let boid of self.boids){
-          let lookAt = normalize(boid.velocity);
+
           boid.model.position.set(boid.position.x,boid.position.y,boid.position.z);
-          boid.model.lookAt(new THREE.Vector3(boid.velocity.x,boid.velocity.y,boid.velocity.z));
+
+          let unitVelocity = difference(normalize(boid.velocity), normalize(boid.position));
+
+          boid.model.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0),
+            new THREE.Vector3(unitVelocity.x, unitVelocity.y, unitVelocity.z) );
         }
 
       }
