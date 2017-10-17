@@ -154,9 +154,34 @@ const Utilities = function(){
         },
 
         /* Rotate 2D */
-        rotate2D: function(v,angle){
-          return {x:v.x*Math.cos(angle)-v.y*Math.sin(angle), y:v.x*Math.sin(angle)+v.y*Math.cos(angle)}
+        rotate2D: function(v,axis,angle){
+          switch(axis){
+            case 'z':
+              return {x:v.x*Math.cos(angle)-v.y*Math.sin(angle), y:v.x*Math.sin(angle)+v.y*Math.cos(angle), z:v.z};
+            case 'x':
+              return {x:v.x,y:v.y*Math.cos(angle)-v.z*Math.sin(angle), z:v.y*Math.sin(angle)+v.z*Math.cos(angle)};
+            case 'y':
+              return {x:v.x*Math.cos(angle)+v.z*Math.sin(angle), y:v.y, z:v.z*Math.cos(angle)-v.x*Math.sin(angle)};
+          }
+        },
+
+        rotateArbAxis(v, axis, angle){
+          let oneMinusCos = 1.0 - Math.cos(angle);
+          let xRot = v.x * (Math.cos(angle) + (axis.x*axis.x)*oneMinusCos)
+                + v.y * ((axis.x*axis.y)*oneMinusCos - axis.z*Math.sin(angle))
+                + v.z * ((axis.x*axis.z)*oneMinusCos + axis.y*Math.sin(angle));
+
+          let yRot = v.x * ((axis.y*axis.x)*oneMinusCos + axis.z*Math.sin(angle))
+            + v.y * (Math.cos(angle) + (axis.y*axis.y)*oneMinusCos)
+            + v.z * ((axis.y*axis.z)*oneMinusCos - axis.x*Math.sin(angle));
+
+          let zRot = v.x * ((axis.z*axis.x)*oneMinusCos - axis.y*Math.sin(angle))
+            + v.y * ((axis.y*axis.z)*oneMinusCos + axis.x*Math.sin(angle))
+            + v.z * (Math.cos(angle) + (axis.z*axis.z)*oneMinusCos)
+
+          return {x:xRot, y:yRot, z:zRot};
         }
+
       }
     }();
 

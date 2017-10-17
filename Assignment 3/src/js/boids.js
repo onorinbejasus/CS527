@@ -14,18 +14,21 @@ Assignment 3
           difference   = Utilities.Vector_Utils.subtract,
           angleBetween = Utilities.Vector_Utils.angleBetween,
           multiply     = Utilities.Vector_Utils.multiply,
+          multiply_components     = Utilities.Vector_Utils.multiply_components,
           divide       = Utilities.Vector_Utils.divide,
+          limit       = Utilities.Vector_Utils.limit,
           shift_divide = Utilities.Vector_Utils.shift_divide,
           magnitude    = Utilities.Vector_Utils.magnitude,
           normalize    = Utilities.Vector_Utils.normalize,
           rotate2D    = Utilities.Vector_Utils.rotate2D,
+          rotateArbAxis    = Utilities.Vector_Utils.rotateArbAxis,
           add          = Utilities.Vector_Utils.add,
           dot          = Utilities.Vector_Utils.dot;
 
     let Solver = null;
 
     let self = {
-      height: 1200, width: 1600, binSize:50, width_binSize:1600/50, height_binSize:1200/50,
+      height: 400, width: 400, depth: 400,  binSize:50, width_binSize:1600/50, height_binSize:1200/50,
       boids : [], bins: [],
       particle_def: { position: {x:0,y:0,z:0}, velocity: {x:0,y:0,z:0}, forces: {x:0,y:0,z:0},
                       length: 10.0, rotation:{pitch:0, yaw:0, roll:0}, sight: 50, mass: 1, radius: 5,
@@ -33,10 +36,12 @@ Assignment 3
     };
 
     self.objects = [
-        {name: "left_wall", type: "wall", position: {x:0, y:0}, normal: {x:1, y:0}, center: {x:0, y:self.height/2.0}},
-        {name: "left_wall", type: "wall", position: {x:0, y:0}, normal: {x:-1, y:0}, center: {x:self.width, y:self.height/2.0}},
-        {name: "top_wall", type: "wall", position: {x:0, y:0}, normal: {x:0, y:1}, center: {x:self.width/2.0, y:0}},
-        {name: "bottom_wall", type: "wall", position: {x:0, y:0}, normal: {x:0, y:-1}, center: {x:self.width/2.0, y:self.height}}
+        // {name: "left_wall", type: "wall", position: {x:0, y:0}, normal: {x:1, y:0}, center: {x:0, y:self.height/2.0}},
+        // {name: "left_wall", type: "wall", position: {x:0, y:0}, normal: {x:-1, y:0}, center: {x:self.width, y:self.height/2.0}},
+      {name: "top_wall", type: "wall", position: {x:0, y:0, z:0}, normal: {x:0, y:-1,z:0},
+        center: {x:self.width/2.0, y:400, z:self.depth/2.0}},
+      {name: "bottom_wall", type: "wall", position: {x:0, y:0, z:0}, normal: {x:0, y:1,z:0},
+          center: {x:self.width/2.0, y:0, z:self.depth/2.0}}
         ];
 
     function randomDirection() { return (Math.floor(Math.random() * 201) - 100) / 100.0; }
@@ -57,12 +62,12 @@ Assignment 3
           }
         }
 
-        let center = {x:40,y:40,z:40}, initial_bin = computeIndex(center.x, center.y);
+        let center = {x:40,y:100,z:40};//, initial_bin = computeIndex(center.x, center.y);
         for(let i = 0; i < flock_size; i++){
-          let boid = createBoid(center, {x:randomDirection(), y:0, z:randomDirection()}, "boid_"+i, initial_bin);
+          let boid = createBoid(center, {x:0, y:-1, z:0}, "boid_"+i, -1);
 
           /* Add the boid to the correct bin */
-          self.bins[initial_bin].push(boid);
+          // self.bins[initial_bin].push(boid);
           self.boids.push(boid);
 
           /* Add the boid to the scene */
@@ -139,14 +144,9 @@ Assignment 3
               distance = Math.abs(dot(distance_target, obstacle.normal));
           /* If we can see the wall, react */
           if(distance < boid.sight){
-            let angle = angleBetween(distance_target, boid.velocity);
-            if(angle >= Math.PI/2.0){
-              angle -= Math.PI/2.0;
-            }
-            let target = rotate2D(boid.velocity, angle),
-                avoidance = compute_seeking_force(target,boid),
-                distanceCM = distance/100.0;
-            force = add(force, multiply(avoidance, (boid.sight/100.0) /(distanceCM*(1.0+distanceCM)) ));
+            let distanceCM = distance/100.0,
+                f = multiply(obstacle.normal, (0.1) / (distanceCM*(distanceCM+0.01)) );
+            force = add(force, f);
           }
         }
       }
@@ -173,11 +173,9 @@ Assignment 3
           cohesion_target = createVec(),
           cohesive_force = createVec(),
 
+          /* steering forces */
           seeking_force = createVec(),
-          avoidance_force = createVec(),
-
-          /* New velocity -- The combined velocity rules */
-          desired_velocity = createVec();
+          steering_force = createVec();
 
       /* Iterate over the neighbors and calculate the separation, cohesion, and alignment */
       for(let neighbor of neighbors){
@@ -214,14 +212,36 @@ Assignment 3
       }
 
       /* Direction to seek */
-      seeking_force = compute_seeking_force( difference({ x:0, y: 100, z: 0 }, boid.position), boid );
-      // avoidance_force = avoid_object(boid);
+      let goal = { x:100, y: 100, z: 0 };
+      let avoidance_force = avoid_object(boid);
+
+      let avoidance_mag = magnitude(avoidance_force);
+      let max = boid.maxSpeed*2.0;
+      /* Check the speed of the incoming boid */
+      if(avoidance_mag > max){
+        let speed_remainder = avoidance_mag - max,
+            avoidance_normal = normalize(avoidance_force),
+            other_direction = difference({x:1,y:1,z:1}, avoidance_normal);
+
+        avoidance_force = limit(avoidance_force, max);
+        /* add some of the remaining force to the seek position */
+
+        /* add the force to the other directions */
+        seeking_force = multiply(compute_seeking_force(goal, boid), (speed_remainder*dt));
+        seeking_force = multiply_components(seeking_force, other_direction);
+
+        /* set the seeking force */
+        steering_force = add(multiply(avoidance_force, 1.5), seeking_force);
+      }
+      else {
+        steering_force = multiply(compute_seeking_force(difference(goal, boid.position), boid), 0.05);
+      }
 
       /* Add the 3 flocking rules for the new velocity */
-      desired_velocity  =
+      let desired_velocity  =
         add(multiply(separation_force, 1.5),
         cohesive_force, alignment_force,
-        multiply(seeking_force, 0.05), avoidance_force);
+        steering_force);
 
       /* Return the acceleration */
       return multiply(desired_velocity, boid.mass);
@@ -241,6 +261,8 @@ Assignment 3
         // }
         // boid.bin = new_bin;
         // self.bins[new_bin].push(boid);
+
+        boid.velocity = limit(boid.velocity, boid.maxSpeed);
 
       }}
 

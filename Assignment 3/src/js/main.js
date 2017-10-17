@@ -49,7 +49,7 @@ Assignment 3
   function initialize() {
 
     camera = new THREE.PerspectiveCamera( 60, window.innerWidth / window.innerHeight, 1, 10000 );
-    camera.position.set( 715, 390, 458 );
+    camera.position.set( 715, 0, 458 );
 
     controls = new THREE.OrbitControls( camera );
     controls.minDistance = 100;
