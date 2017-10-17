@@ -15,10 +15,12 @@ Assignment 3
           angleBetween = Utilities.Vector_Utils.angleBetween,
           multiply     = Utilities.Vector_Utils.multiply,
           divide       = Utilities.Vector_Utils.divide,
-          limit        = Utilities.Vector_Utils.limit,
+          shift_divide = Utilities.Vector_Utils.shift_divide,
           magnitude    = Utilities.Vector_Utils.magnitude,
           normalize    = Utilities.Vector_Utils.normalize,
-          add          = Utilities.Vector_Utils.add;
+          rotate2D    = Utilities.Vector_Utils.rotate2D,
+          add          = Utilities.Vector_Utils.add,
+          dot          = Utilities.Vector_Utils.dot;
 
     let Solver = null;
 
@@ -29,6 +31,13 @@ Assignment 3
                       length: 1.0, rotation:{pitch:0, yaw:0, roll:0}, sight: 50, mass: 1,
                       separation: 30.0, maxSpeed: 2, maxForce: 0.03, name: -1, bin: -1}
     };
+
+    self.objects = [
+        {name: "left_wall", type: "wall", position: {x:0, y:0}, normal: {x:1, y:0}, center: {x:0, y:self.height/2.0}},
+        {name: "left_wall", type: "wall", position: {x:0, y:0}, normal: {x:-1, y:0}, center: {x:self.width, y:self.height/2.0}},
+        {name: "top_wall", type: "wall", position: {x:0, y:0}, normal: {x:0, y:1}, center: {x:self.width/2.0, y:0}},
+        {name: "bottom_wall", type: "wall", position: {x:0, y:0}, normal: {x:0, y:-1}, center: {x:self.width/2.0, y:self.height}}
+        ];
 
     function randomDirection() { return (Math.floor(Math.random() * 201) - 100) / 100.0; }
     function computeIndex(x,y) {
@@ -47,9 +56,10 @@ Assignment 3
         }
       }
 
-     let center = {x:1200,y:600}, toRadians = Math.PI/180.0, initial_bin = computeIndex(center.x, center.y);
+     let center = {x:400,y:1000}, toRadians = Math.PI/180.0, initial_bin = computeIndex(center.x, center.y);
       for(let i = 0; i < flock_size; i++){
-        let boid = createBoid(center, {x:randomDirection(), y:randomDirection()}, "boid_"+i, initial_bin);
+        // let boid = createBoid(center, {x:randomDirection(), y:randomDirection()}, "boid_"+i, initial_bin);
+        let boid = createBoid(center, {x:-1, y:0}, "boid_"+i, initial_bin);
         self.bins[initial_bin].push(boid);
         self.boids.push(boid);
       }
@@ -68,20 +78,19 @@ Assignment 3
       if(index > 0) neighbor_subset.push(self.bins[index-1]);
       if(index-self.width_binSize > -1) neighbor_subset.push(self.bins[index-self.width_binSize]);
 
-
       for(let neighbor of _.flatten(neighbor_subset)) {
         if(boid.name === neighbor.name) continue;
         /* Calculate the distance */
-        let distance = magnitude(difference(neighbor.position,boid.position));
+        let distance_target = difference(neighbor.position,boid.position),
+            distance = magnitude(distance_target);
         /* If the boid is close enough to us, add it as a neighbor*/
         if(distance < boid.sight) {
-          /* Check if the neighbor is in our FOV (270 degrees -- good enough) */
-          let diff = difference(neighbor.position, boid.position);
+          /* Check if the neighbor is in our FOV (180 degrees -- good enough) */
           /* Point is right on top of the neighbor */
-          if(magnitude(diff) >  0){
-            let FOV = angleBetween(diff, boid.velocity);
+          if(magnitude(distance_target) > 0){
+            let FOV = angleBetween(distance_target, boid.velocity);
             if(FOV <= Math.PI/2.0) {
-              neighbors.push( neighbor );
+              neighbors.push(neighbor);
               distances.push(distance);
             }
           }
@@ -108,21 +117,51 @@ Assignment 3
       return difference(desired_vel,boid.velocity);
     }
 
+    /* Avoid an object in our direct path */
+    function avoid_object(boid){
+      let force = createVec2();
+      /* iterate over the objects and check to see if we are within striking distance */
+      for(let obstacle of self.objects){
+        let visible = dot(boid.velocity, obstacle.normal);
+        if(visible < 0){
+          /* get the distance to the wall */
+          let distance_target = difference(obstacle.center,boid.position),
+              distance = Math.abs(dot(distance_target, obstacle.normal));
+          /* If we can see the wall, react */
+          if(distance < boid.sight){
+            let angle = angleBetween(distance_target, boid.velocity);
+            if(angle >= Math.PI/2.0){
+              angle -= Math.PI/2.0;
+            }
+            let target = rotate2D(boid.velocity, angle),
+                avoidance = compute_seeking_force(target,boid),
+                distanceCM = distance/100.0;
+            force = add(force, multiply(avoidance, (boid.sight/100.0) /(distanceCM*(1.0+distanceCM)) ));
+          }
+        }
+      }
+      return force;
+    }
+
     /* Move all boids forward in time
     *  1) Alignment (Velocity)
     *  2) Cohesion (Position)
     *  3) Separation (Centering) */
-    function compute_flocking_force(boid) {
+    function compute_flocking_force(boid,dt) {
       /* Find the closest neighbors */
       let neighbors = find_closest_neighbors(boid);
       /* Initiate the three rules */
       /* Alignment -- Normalized neighbor velocity */
       let alignment  = createVec2(),
+          alignment_force = createVec2(),
           /* Separation -- Negated, normalized distance of boid with respect to each of its neighbors */
           separation = createVec2(),
+          separation_force = createVec2(),
           separationCount = 0,
           /* Cohesion -- Normalized neighbor position */
           cohesion   = createVec2(),
+          cohesion_target = createVec2(),
+          cohesive_force = createVec2(),
           /* New velocity -- The combined velocity rules */
           desired_velocity = createVec2();
 
@@ -154,15 +193,19 @@ Assignment 3
         cohesion   = divide(cohesion,neighbors.length);
 
         /* Calculate the velocities */
-        let separation_force = compute_seeking_force(separation, boid),
-            cohesion_target = difference(cohesion, boid.position),
-            cohesive_force = compute_seeking_force(cohesion_target, boid),
-            alignment_force = compute_seeking_force(alignment, boid);
-
-        let seeking = compute_seeking_force( difference({x:0, y: 0}, boid.position), boid);
-          /* Add the 3 flocking rules for the new velocity */
-        desired_velocity  = add(multiply(separation_force, 1.5), cohesive_force, alignment_force, seeking);
+        separation_force = compute_seeking_force(separation, boid);
+        cohesion_target = difference(cohesion, boid.position);
+        cohesive_force = compute_seeking_force(cohesion_target, boid);
+        alignment_force = compute_seeking_force(alignment, boid);
       }
+
+      /* Direction to seek */
+      let seeking = compute_seeking_force( difference({ x:400, y: 800 }, boid.position), boid );
+      let avoid_force = avoid_object(boid);
+
+      /* Add the 3 flocking rules for the new velocity */
+      desired_velocity  = add(multiply(separation_force, 1.5), cohesive_force, alignment_force, multiply(seeking, 0.05), avoid_force);
+
       /* Return the acceleration */
       return multiply(desired_velocity, boid.mass);
     }

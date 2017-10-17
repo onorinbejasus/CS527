@@ -11,10 +11,6 @@ Assignment 3
       canvas, ctx, animation_then, calculate_then,
       background = "rgba(238,238,238,0.4)";
 
-  let objects = [{
-    name: "floor", type: "wall", position: {x:0, y:1000}, normal: {x: 0, y:1}
-  }];
-
   let animation_count = 0,
       computation_count = 0;
 
@@ -32,14 +28,6 @@ Assignment 3
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     /* Render the scene */
     Boids_Manager.render(ctx);
-  }
-
-  function derivativeEval(dt) {
-
-  }
-
-  function calculateNextStep(interval) {
-
   }
 
   /* based on the request animation example here: http://jsfiddle.net/m1erickson/CtsY3/*/
@@ -76,7 +64,7 @@ Assignment 3
     canvas = document.getElementById("particleCanvas");
     ctx = canvas.getContext("2d");
 
-    Boids_Manager.initialize(100);
+    Boids_Manager.initialize(25);
 
     /* Add the click listener */
     // canvas.addEventListener("click", mouseClickCB);

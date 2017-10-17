@@ -150,6 +150,11 @@ const Utilities = function(){
           });
           return c;
         },
+
+        /* Rotate 2D */
+        rotate2D: function(v,angle){
+          return {x:v.x*Math.cos(angle)-v.y*Math.sin(angle), y:v.x*Math.sin(angle)+v.y*Math.cos(angle)}
+        }
       }
     }();
 

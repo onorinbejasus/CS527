@@ -20,12 +20,12 @@ let Integration = function(CONSTANT_FORCES){
         limit = Utilities.Vector_Utils.limit,
         create_particle = Utilities.Model_Utils.createParticle;
 
-  function clearAndAccumulateForces(p,other_forces) {
+  function clearAndAccumulateForces(p,other_forces,dt) {
     /* Clear the previous forces */
     p.forces = Utilities.Vector_Utils.zero(p.forces);
     /* Accumulate the constant forces */
     for(let force of _.flatten([CONSTANT_FORCES, other_forces])){
-      p.forces = add(p.forces, force(p));
+      p.forces = add(p.forces, force(p,dt));
     }
     /* return the acceleration*/
     return divide(p.forces,p.mass);
@@ -56,7 +56,7 @@ let Integration = function(CONSTANT_FORCES){
     /*dt * conversion m->cm*/
     let dt_cm = dt * 100.0;
     /* Calculate the initial acceleration */
-    let acceleration = clearAndAccumulateForces(p,other_forces);
+    let acceleration = clearAndAccumulateForces(p,other_forces,dt);
     /* K1 -- Euler */
     let k1 = multiply(acceleration,dt),
         /* Save k1/2.0 for later use */
@@ -67,7 +67,7 @@ let Integration = function(CONSTANT_FORCES){
         p1 = create_particle( add(p.position, shift_divide(multiply(dv_1,dt_cm))),dv_1, p.name );
 
     /* Calculate the acceleration at the Euler position */
-    acceleration = clearAndAccumulateForces(p1,other_forces);
+    acceleration = clearAndAccumulateForces(p1,other_forces,dt);
     /* K2 -- First Midpoint */
     let k2 = multiply(acceleration,dt),
         /* Save k2/2.0 for later use */
@@ -78,7 +78,7 @@ let Integration = function(CONSTANT_FORCES){
         p2 = create_particle( add(p.position, shift_divide(multiply(dv_2,dt_cm))),dv_2, p.name );
 
     /* Calculate the acceleration at the first midpoint position */
-    acceleration = clearAndAccumulateForces(p2,other_forces);
+    acceleration = clearAndAccumulateForces(p2,other_forces,dt);
     /* K3 -- Second Midpoint */
     let k3 = multiply(acceleration,dt),
         /* Midpoint velocity: d_v3 = dt * (v0 + k2) */
@@ -87,7 +87,7 @@ let Integration = function(CONSTANT_FORCES){
         p3 = create_particle( add(p.position, multiply(dv_3,dt_cm)),dv_3, p.name );
 
     /* Calculate the acceleration at the last midpoint */
-    acceleration = clearAndAccumulateForces(p3,other_forces);
+    acceleration = clearAndAccumulateForces(p3,other_forces,dt);
     /* K4 -- Last Midpoint */
     let k4 = multiply(acceleration,dt),
     /* Midpoint velocity: d_v3 = dt * (v0 + k3) */
