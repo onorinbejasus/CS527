@@ -64,12 +64,12 @@ Assignment 3
     renderer.setSize( window.innerWidth, window.innerHeight );
 
     /* Add lights to the scene to see the model */
-    let ambientLight = new THREE.AmbientLight( 0x444444 );
-    scene.add( ambientLight );
-
-    let directionalLight = new THREE.DirectionalLight( 0xffeedd );
-        directionalLight.position.set( 0, 0, 1 ).normalize();
-    scene.add( directionalLight );
+    // let ambientLight = new THREE.AmbientLight( 0x444444 );
+    // scene.add( ambientLight );
+    //
+    // let directionalLight = new THREE.DirectionalLight( 0xffeedd );
+    //     directionalLight.position.set( 0, 0, 1 ).normalize();
+    // scene.add( directionalLight );
 
 
     /* Grid Floor*/
@@ -81,7 +81,7 @@ Assignment 3
     // scene.add( ceiling );
     scene.add( axis );
 
-    Boids_Manager.initialize(10, scene);
+    Boids_Manager.initialize(25, scene);
       // .then(function(){
       /* begin animating the scene */
       setAnimationIntervals(60, animate);

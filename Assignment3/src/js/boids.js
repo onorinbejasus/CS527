@@ -57,7 +57,8 @@ Assignment 3
 
       /* Load the FBX model */
 
-      MeshLoader.loadFBX('models/fbx/fishy.fbx', self.mixers)
+      // MeshLoader.loadFBX('models/fbx/fishy2.fbx', self.mixers)
+      MeshLoader.loadJSON('models/json/fishy.json', self.mixers)
         .then(function(obj){
           // for(let w = 0; w <= self.width_binSize; w++){
           //   for(let h = 0; h <= self.height_binSize; h++){
@@ -282,12 +283,20 @@ Assignment 3
         for(let boid of self.boids){
 
           boid.model.position.set(boid.position.x,boid.position.y,boid.position.z);
-
-
           let unitVelocity = normalize(boid.velocity);
-          // boid.model.lookAt(new THREE.Vector3(unitVelocity.x, unitVelocity.y, unitVelocity.z));
-          boid.model.quaternion.setFromUnitVectors(new THREE.Vector3(0,0,-1),
-            new THREE.Vector3(unitVelocity.x, unitVelocity.y, 0.0) );
+
+
+
+          boid.model.lookAt(new THREE.Vector3(unitVelocity.x, unitVelocity.y, 0.0));
+
+          let newDir = new THREE.Vector3(boid.velocity.x, boid.velocity.y, boid.velocity.z);
+          let pos = new THREE.Vector3();
+          pos.addVectors(newDir, boid.model.position);
+          boid.model.lookAt(pos);
+
+          // boid.model.quaternion.setFromUnitVectors(new THREE.Vector3(-1,0,0),
+          //   new THREE.Vector3(unitVelocity.x, unitVelocity.y, 0.0) );
+          // console.log();
         }
 
       }

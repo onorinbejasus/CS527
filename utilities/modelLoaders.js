@@ -32,10 +32,10 @@ const MeshLoader = function(){
     return new Promise(function(resolve, reject){
       new THREE.JSONLoader().load( model, function ( geometry, materials ) {
 
-        resolve(geometry);
 
         // var material = materials[ 0 ];
-        // var obj = new THREE.SkinnedMesh( geometry, material );
+        var obj = new THREE.Mesh( geometry, new THREE.MeshFaceMaterial(materials) );
+        resolve(obj);
 
         // obj.mixer = new THREE.AnimationMixer( obj.geometry );
         // mixers.push( obj.mixer );
