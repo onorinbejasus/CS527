@@ -75,17 +75,29 @@ Assignment 3
     /* Grid Floor*/
     let floor = new THREE.GridHelper( 800, 10 );
     let ceiling = new THREE.GridHelper( 800, 10 );
-    // celing
+
     let axis = new THREE.AxisHelper(50);
     scene.add( floor );
     // scene.add( ceiling );
     scene.add( axis );
 
-    Boids_Manager.initialize(25, scene);
+    /* Create a wireframe cube around the scene */
+    let cubeGeometry = new THREE.BoxGeometry( 800, 400, 800 );
+    let edge = new THREE.EdgesGeometry( cubeGeometry );
+    let edgeMaterial = new THREE.LineBasicMaterial( { color: 0xffffff, linewidth: 2 } );
+    let wireframe = new THREE.LineSegments( edge, edgeMaterial );
+    wireframe.position.set(0, 200, 0);
+    scene.add( wireframe );
+
+
+
+    d3.json("boids.json", function(data) {
+      Boids_Manager.initialize(data.number, data.direction, scene);
       // .then(function(){
       /* begin animating the scene */
       setAnimationIntervals(60, animate);
-    // });
+    });
+
 
     document.body.appendChild( renderer.domElement );
 

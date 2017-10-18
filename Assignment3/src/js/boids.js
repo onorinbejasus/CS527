@@ -36,8 +36,19 @@ Assignment 3
     self.objects = [
         // {name: "left_wall", type: "wall", position: {x:0, y:0}, normal: {x:1, y:0}, center: {x:0, y:self.height/2.0}},
         // {name: "left_wall", type: "wall", position: {x:0, y:0}, normal: {x:-1, y:0}, center: {x:self.width, y:self.height/2.0}},
+
+      {name: "left_wall", type: "wall", position: {x:0, y:0, z:0}, normal: {x:1, y:0,z:0},
+        center: {x:0, y:self.height/2.0, z:self.depth/2.0}},
+      {name: "right_wall", type: "wall", position: {x:0, y:0, z:0}, normal: {x:-1, y:0,z:0},
+        center: {x:self.width, y:self.height/2.0, z:self.depth/2.0}},
+
+      {name: "front_wall", type: "wall", position: {x:0, y:0, z:0}, normal: {x:0, y:0,z:1},
+        center: {x:self.width/2, y:self.height/2.0, z:0}},
+      {name: "back_wall", type: "wall", position: {x:0, y:0, z:0}, normal: {x:-0, y:0,z:-1},
+        center: {x:self.width/2.0, y:self.height/2.0, z:self.depth}},
+
       {name: "top_wall", type: "wall", position: {x:0, y:0, z:0}, normal: {x:0, y:-1,z:0},
-        center: {x:self.width/2.0, y:400, z:self.depth/2.0}},
+        center: {x:self.width/2.0, y:self.height, z:self.depth/2.0}},
       {name: "bottom_wall", type: "wall", position: {x:0, y:0, z:0}, normal: {x:0, y:1,z:0},
           center: {x:self.width/2.0, y:0, z:self.depth/2.0}}
         ];
@@ -51,7 +62,7 @@ Assignment 3
 
     /* Initialize the boids system
      *  1) Create the boid particles */
-    function initialize_system(flock_size, scene) {
+    function initialize_system(flock_size, direction, scene) {
       Utilities.Model_Utils.setParticleDefinition(self.particle_def);
       Solver = new Integration([]);
 
@@ -69,7 +80,7 @@ Assignment 3
           // let center = {x:40,y:100,z:40};//, initial_bin = computeIndex(center.x, center.y);
           for(let i = 0; i < flock_size; i++){
             let center = {x:40 + i*25,y:100,z:40+ i*25};
-            let boid = createBoid(center, {x:0, y:-1, z:0}, "boid_"+i, -1, obj.clone());
+            let boid = createBoid(center, {x:direction[0], y:direction[1], z:direction[2]}, "boid_"+i, -1, obj.clone());
 
             /* Add the boid to the correct bin */
             // self.bins[initial_bin].push(boid);
@@ -243,7 +254,7 @@ Assignment 3
 
       /* Add the 3 flocking rules for the new velocity */
       let desired_velocity  =
-        add(multiply(separation_force, 1.5),
+        add(multiply(separation_force, 1.25),
         cohesive_force, alignment_force,
         steering_force);
 
