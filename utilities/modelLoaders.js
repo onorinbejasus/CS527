@@ -34,7 +34,8 @@ const MeshLoader = function(){
 
 
         // var material = materials[ 0 ];
-        var obj = new THREE.Mesh( geometry, new THREE.MeshFaceMaterial(materials) );
+        //var obj = new THREE.Mesh( geometry, new THREE.MeshFaceMaterial(materials) );
+        var obj = THREE.SceneUtils.createMultiMaterialObject( geometry, materials );
         resolve(obj);
 
         // obj.mixer = new THREE.AnimationMixer( obj.geometry );
