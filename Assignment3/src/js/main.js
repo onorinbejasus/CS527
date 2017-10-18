@@ -52,7 +52,7 @@ Assignment 3
     camera.position.set( 715, 0, 458 );
 
     controls = new THREE.OrbitControls( camera );
-    controls.minDistance = 100;
+    controls.minDistance = 10;
     controls.maxDistance = 1500;
 
     scene = new THREE.Scene();

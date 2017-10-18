@@ -59,30 +59,26 @@ Assignment 3
 
       MeshLoader.loadFBX('models/fbx/fishy.fbx', self.mixers)
         .then(function(obj){
-          return new Promise(function(resolve, reject){
-            // for(let w = 0; w <= self.width_binSize; w++){
-            //   for(let h = 0; h <= self.height_binSize; h++){
-            //     self.bins.push([]);
-            //   }
-            // }
+          // for(let w = 0; w <= self.width_binSize; w++){
+          //   for(let h = 0; h <= self.height_binSize; h++){
+          //     self.bins.push([]);
+          //   }
+          // }
 
-            // let center = {x:40,y:100,z:40};//, initial_bin = computeIndex(center.x, center.y);
-            for(let i = 0; i < flock_size; i++){
-              let center = {x:40 + i*25,y:100,z:40+ i*25};
-              let boid = createBoid(center, {x:0, y:-1, z:0}, "boid_"+i, -1, obj.clone());
+          // let center = {x:40,y:100,z:40};//, initial_bin = computeIndex(center.x, center.y);
+          for(let i = 0; i < flock_size; i++){
+            let center = {x:40 + i*25,y:100,z:40+ i*25};
+            let boid = createBoid(center, {x:0, y:-1, z:0}, "boid_"+i, -1, obj.clone());
 
-              /* Add the boid to the correct bin */
-              // self.bins[initial_bin].push(boid);
-              self.boids.push(boid);
+            /* Add the boid to the correct bin */
+            // self.bins[initial_bin].push(boid);
+            self.boids.push(boid);
 
-              /* Add the boid to the scene */
-              scene.add(boid.model);
-            }
-            /* Done setting up */
-            resolve();
-          });
+            /* Add the boid to the scene */
+            scene.add(boid.model);
+          }
+
         });
-
     }
 
     /* Finds the closest neighbors to the current boid
@@ -286,9 +282,12 @@ Assignment 3
         for(let boid of self.boids){
 
           boid.model.position.set(boid.position.x,boid.position.y,boid.position.z);
-          // let unitVelocity = difference(normalize(boid.velocity), normalize(boid.position));
-          // boid.model.quaternion.setFromUnitVectors(new THREE.Vector3(0,0,-1),
-          //   new THREE.Vector3(unitVelocity.x, unitVelocity.y, unitVelocity.z) );
+
+
+          let unitVelocity = normalize(boid.velocity);
+          // boid.model.lookAt(new THREE.Vector3(unitVelocity.x, unitVelocity.y, unitVelocity.z));
+          boid.model.quaternion.setFromUnitVectors(new THREE.Vector3(0,0,-1),
+            new THREE.Vector3(unitVelocity.x, unitVelocity.y, 0.0) );
         }
 
       }

@@ -268,9 +268,9 @@ const Utilities = function(){
             }
             particle.model.position.set(position.x,position.y,position.z);
 
-            // let unitVelocity = Vector_Utils.normalize(velocity);
-            // particle.model.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0),
-            //   new THREE.Vector3(unitVelocity.x, unitVelocity.y, unitVelocity.z) );
+            let unitVelocity = Vector_Utils.normalize(velocity);
+            particle.model.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0),
+              new THREE.Vector3(unitVelocity.x, unitVelocity.y, unitVelocity.z) );
 
             return particle;
           }
