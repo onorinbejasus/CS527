@@ -57,7 +57,7 @@ Assignment 3
 
       /* Load the FBX model */
 
-      MeshLoader.loadFBX('models/fbx/Fish.fbx', self.mixers)
+      MeshLoader.loadFBX('models/fbx/fishy.fbx', self.mixers)
         .then(function(obj){
           return new Promise(function(resolve, reject){
             // for(let w = 0; w <= self.width_binSize; w++){
@@ -286,9 +286,8 @@ Assignment 3
         for(let boid of self.boids){
 
           boid.model.position.set(boid.position.x,boid.position.y,boid.position.z);
-
           // let unitVelocity = difference(normalize(boid.velocity), normalize(boid.position));
-          // boid.model.quaternion.setFromUnitVectors(new THREE.Vector3(0,-1,0),
+          // boid.model.quaternion.setFromUnitVectors(new THREE.Vector3(0,0,-1),
           //   new THREE.Vector3(unitVelocity.x, unitVelocity.y, unitVelocity.z) );
         }
 
