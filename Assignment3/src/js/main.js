@@ -83,11 +83,19 @@ Assignment 3
 
     /* Create a wireframe cube around the scene */
     let cubeGeometry = new THREE.BoxGeometry( 800, 400, 800 );
-    let edge = new THREE.EdgesGeometry( cubeGeometry );
-    let edgeMaterial = new THREE.LineBasicMaterial( { color: 0xffffff, linewidth: 2 } );
-    let wireframe = new THREE.LineSegments( edge, edgeMaterial );
-    wireframe.position.set(0, 200, 0);
-    scene.add( wireframe );
+    let water_material = new THREE.MeshBasicMaterial( {color: 0x0000ff} );
+    water_material.transparent = true;
+    water_material.opacity = 0.1;
+
+    //
+    // let edge = new THREE.EdgesGeometry( cubeGeometry );
+    // let edgeMaterial = new THREE.LineBasicMaterial( { color: 0xffffff, linewidth: 2 } );
+    // let wireframe = new THREE.LineSegments( edge, edgeMaterial );
+
+    let aquarium = new THREE.Mesh(cubeGeometry, water_material);
+
+    aquarium.position.set(0, 200, 0);
+    scene.add( aquarium );
 
 
 
