@@ -177,7 +177,7 @@ const Utilities = function(){
 
           let zRot = v.x * ((axis.z*axis.x)*oneMinusCos - axis.y*Math.sin(angle))
             + v.y * ((axis.y*axis.z)*oneMinusCos + axis.x*Math.sin(angle))
-            + v.z * (Math.cos(angle) + (axis.z*axis.z)*oneMinusCos)
+            + v.z * (Math.cos(angle) + (axis.z*axis.z)*oneMinusCos);
 
           return {x:xRot, y:yRot, z:zRot};
         }
@@ -249,7 +249,7 @@ const Utilities = function(){
             return particle;
           },
 
-          createParticle3D: function(position,velocity,name,bin) {
+          createParticle3D: function(position,velocity,name,bin,model) {
             /* Clone the particle template*/
             let particle = _.cloneDeep(particle_def);
             /* Set the particle attributes */
@@ -259,18 +259,23 @@ const Utilities = function(){
             particle.bin = bin || -1;
 
             /* Create the boid model */
-            let geometry = new THREE.ConeGeometry(particle.radius, particle.length, 32 );
-            particle.model = new THREE.Mesh( geometry, default_material );
+            if(model){
+              particle.model = model;
+            }
+            else {
+              let geometry = new THREE.ConeGeometry(particle.radius, particle.length, 32);
+              particle.model = new THREE.Mesh( geometry, default_material );
+            }
             particle.model.position.set(position.x,position.y,position.z);
 
-            let unitVelocity = Vector_Utils.normalize(velocity);
-            particle.model.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0),
-              new THREE.Vector3(unitVelocity.x, unitVelocity.y, unitVelocity.z) );
+            // let unitVelocity = Vector_Utils.normalize(velocity);
+            // particle.model.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0),
+            //   new THREE.Vector3(unitVelocity.x, unitVelocity.y, unitVelocity.z) );
 
             return particle;
           }
         }
     }();
 
-  return { Vector_Utils: Vector_Utils, Model_Utils: Model_Utils };
+  return {Vector_Utils: Vector_Utils, Model_Utils: Model_Utils};
 }();

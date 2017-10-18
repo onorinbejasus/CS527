@@ -23,6 +23,7 @@ Assignment 3
           dot          = Utilities.Vector_Utils.dot;
 
     let Solver = null;
+    let clock = new THREE.Clock();
 
     let self = {
       height: 400, width: 400, depth: 400,  binSize:50, width_binSize:1600/50, height_binSize:1200/50,
@@ -41,6 +42,8 @@ Assignment 3
           center: {x:self.width/2.0, y:0, z:self.depth/2.0}}
         ];
 
+    self.mixers = [];
+
     function randomDirection() { return (Math.floor(Math.random() * 201) - 100) / 100.0; }
     function computeIndex(x,y) {
       return parseInt(y/self.binSize) + self.width_binSize * parseInt(x/self.binSize);
@@ -52,27 +55,34 @@ Assignment 3
       Utilities.Model_Utils.setParticleDefinition(self.particle_def);
       Solver = new Integration([]);
 
-      return new Promise(function(resolve, reject){
-        for(let w = 0; w <= self.width_binSize; w++){
-          for(let h = 0; h <= self.height_binSize; h++){
-            self.bins.push([]);
-          }
-        }
+      /* Load the FBX model */
 
-        let center = {x:40,y:100,z:40};//, initial_bin = computeIndex(center.x, center.y);
-        for(let i = 0; i < flock_size; i++){
-          let boid = createBoid(center, {x:0, y:-1, z:0}, "boid_"+i, -1);
+      MeshLoader.loadFBX('models/fbx/Fish.fbx', self.mixers)
+        .then(function(obj){
+          return new Promise(function(resolve, reject){
+            // for(let w = 0; w <= self.width_binSize; w++){
+            //   for(let h = 0; h <= self.height_binSize; h++){
+            //     self.bins.push([]);
+            //   }
+            // }
 
-          /* Add the boid to the correct bin */
-          // self.bins[initial_bin].push(boid);
-          self.boids.push(boid);
+            // let center = {x:40,y:100,z:40};//, initial_bin = computeIndex(center.x, center.y);
+            for(let i = 0; i < flock_size; i++){
+              let center = {x:40 + i*25,y:100,z:40+ i*25};
+              let boid = createBoid(center, {x:0, y:-1, z:0}, "boid_"+i, -1, obj.clone());
 
-          /* Add the boid to the scene */
-          scene.add(boid.model);
-        }
-        /* Done setting up */
-        resolve();
-      });
+              /* Add the boid to the correct bin */
+              // self.bins[initial_bin].push(boid);
+              self.boids.push(boid);
+
+              /* Add the boid to the scene */
+              scene.add(boid.model);
+            }
+            /* Done setting up */
+            resolve();
+          });
+        });
+
     }
 
     /* Finds the closest neighbors to the current boid
@@ -110,13 +120,13 @@ Assignment 3
       }
 
       /* Only consider the 4 closest neighbors */
-      if(neighbors.length > 10){
-        /* LoDash Magic */
-        neighbors = _.chain(distances)
-          .toPairs().sortBy(1)
-          .map(function (i) { return neighbors[i[0]]; })
-          .value().slice(0,10);
-      }
+      // if(neighbors.length > 10){
+      //   /* LoDash Magic */
+      //   neighbors = _.chain(distances)
+      //     .toPairs().sortBy(1)
+      //     .map(function (i) { return neighbors[i[0]]; })
+      //     .value().slice(0,10);
+      // }
 
       return neighbors;
     }
@@ -264,16 +274,22 @@ Assignment 3
       }}
 
       function render_boids_3D(){
+
+        // if ( self.mixers.length > 0 ) {
+        //   for ( let i = 0; i < self.mixers.length; i++ ) {
+        //     self.mixers[ i ].update( clock.getDelta() );
+        //   }
+        // }
+
         /* iterate over each of the boids
            and render a triangle around its position */
         for(let boid of self.boids){
 
           boid.model.position.set(boid.position.x,boid.position.y,boid.position.z);
 
-          let unitVelocity = difference(normalize(boid.velocity), normalize(boid.position));
-
-          boid.model.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0),
-            new THREE.Vector3(unitVelocity.x, unitVelocity.y, unitVelocity.z) );
+          // let unitVelocity = difference(normalize(boid.velocity), normalize(boid.position));
+          // boid.model.quaternion.setFromUnitVectors(new THREE.Vector3(0,-1,0),
+          //   new THREE.Vector3(unitVelocity.x, unitVelocity.y, unitVelocity.z) );
         }
 
       }

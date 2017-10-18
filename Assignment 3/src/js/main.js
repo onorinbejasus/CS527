@@ -58,11 +58,19 @@ Assignment 3
     scene = new THREE.Scene();
     scene.background = new THREE.Color( 0xeeeeee );
 
-
     // renderer
     renderer = new THREE.WebGLRenderer( { canvas: document.getElementById("particleCanvas"), antialias: true } );
     renderer.setPixelRatio( window.devicePixelRatio );
     renderer.setSize( window.innerWidth, window.innerHeight );
+
+    /* Add lights to the scene to see the model */
+    let ambientLight = new THREE.AmbientLight( 0x444444 );
+    scene.add( ambientLight );
+
+    let directionalLight = new THREE.DirectionalLight( 0xffeedd );
+        directionalLight.position.set( 0, 0, 1 ).normalize();
+    scene.add( directionalLight );
+
 
     /* Grid Floor*/
     let floor = new THREE.GridHelper( 800, 10 );
@@ -73,15 +81,15 @@ Assignment 3
     // scene.add( ceiling );
     scene.add( axis );
 
-    Boids_Manager.initialize(25, scene).then(function(){
+    Boids_Manager.initialize(10, scene);
+      // .then(function(){
       /* begin animating the scene */
       setAnimationIntervals(60, animate);
-    });
+    // });
 
     document.body.appendChild( renderer.domElement );
 
     window.addEventListener( 'resize', onWindowResize, false );
-
   }
 
   function onWindowResize() {
