@@ -36,7 +36,7 @@ Assignment 3
       Boids_Manager.navigate(elapsed/1e3);
 
       /* Render the scene */
-      render();
+      render(animation_count);
     }
   }
 
@@ -92,12 +92,33 @@ Assignment 3
     // let edgeMaterial = new THREE.LineBasicMaterial( { color: 0xffffff, linewidth: 2 } );
     // let wireframe = new THREE.LineSegments( edge, edgeMaterial );
 
-    let aquarium = new THREE.Mesh(cubeGeometry, water_material);
+    let sphereGroup = new THREE.Group();
+    sphereGroup.name = "sphereGroup";
+    let geometry = new THREE.SphereGeometry( 20, 64, 64 );
+    let material = new THREE.MeshBasicMaterial( {color: 0xffff00} );
 
+    let sphere = new THREE.Mesh( geometry.clone(), material.clone() );
+      sphere.position.set(100, 100, 100)
+    let sphere1 = new THREE.Mesh( geometry.clone(), material.clone() );
+      sphere1.position.set(10, 250, -300)
+    let sphere2 = new THREE.Mesh( geometry.clone(), material.clone() );
+    sphere2.position.set(350, 30, -10)
+    let sphere3 = new THREE.Mesh( geometry.clone(), material.clone() );
+    sphere3.position.set(0, 50, 0)
+    let sphere4 = new THREE.Mesh( geometry.clone(), material.clone() );
+    sphere4.position.set(0, 350, 75);
+
+    sphereGroup.add( sphere );
+    sphereGroup.add (sphere1  );
+    sphereGroup.add( sphere2);
+    sphereGroup.add( sphere3 );
+    sphereGroup.add( sphere4 );
+
+    scene.add(sphereGroup);
+
+    let aquarium = new THREE.Mesh(cubeGeometry, water_material);
     aquarium.position.set(0, 200, 0);
     scene.add( aquarium );
-
-
 
     d3.json("boids.json", function(data) {
       Boids_Manager.initialize(data.number, data.direction, scene);

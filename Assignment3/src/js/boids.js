@@ -25,6 +25,9 @@ Assignment 3
     let Solver = null;
     let clock = new THREE.Clock();
 
+
+    let goal = { x:100, y: 100, z: 0 };
+
     let self = {
       height: 400, width: 400, depth: 400,  binSize:50, width_binSize:1600/50, height_binSize:1200/50,
       boids : [], bins: [],
@@ -34,9 +37,6 @@ Assignment 3
     };
 
     self.objects = [
-        // {name: "left_wall", type: "wall", position: {x:0, y:0}, normal: {x:1, y:0}, center: {x:0, y:self.height/2.0}},
-        // {name: "left_wall", type: "wall", position: {x:0, y:0}, normal: {x:-1, y:0}, center: {x:self.width, y:self.height/2.0}},
-
       {name: "left_wall", type: "wall", position: {x:0, y:0, z:0}, normal: {x:1, y:0,z:0},
         center: {x:0, y:self.height/2.0, z:self.depth/2.0}},
       {name: "right_wall", type: "wall", position: {x:0, y:0, z:0}, normal: {x:-1, y:0,z:0},
@@ -50,12 +50,13 @@ Assignment 3
       {name: "top_wall", type: "wall", position: {x:0, y:0, z:0}, normal: {x:0, y:-1,z:0},
         center: {x:self.width/2.0, y:self.height, z:self.depth/2.0}},
       {name: "bottom_wall", type: "wall", position: {x:0, y:0, z:0}, normal: {x:0, y:1,z:0},
-          center: {x:self.width/2.0, y:0, z:self.depth/2.0}}
-        ];
+          center: {x:self.width/2.0, y:0, z:self.depth/2.0}},
 
+    ];
+    self.scene = null;
     self.mixers = [];
 
-    function randomDirection() { return (Math.floor(Math.random() * 201) - 100) / 100.0; }
+    function randomDirection() { return (Math.floor(Math.random() * 399) - 399 )  }
     function computeIndex(x,y) {
       return parseInt(y/self.binSize) + self.width_binSize * parseInt(x/self.binSize);
     }
@@ -66,17 +67,13 @@ Assignment 3
       Utilities.Model_Utils.setParticleDefinition(self.particle_def);
       Solver = new Integration([]);
 
+      self.scene = scene;
+
       /* Load the FBX model */
 
       // MeshLoader.loadFBX('models/fbx/fishy2.fbx', self.mixers)
       MeshLoader.loadJSON('models/json/fishy.json', self.mixers)
         .then(function(obj){
-          // for(let w = 0; w <= self.width_binSize; w++){
-          //   for(let h = 0; h <= self.height_binSize; h++){
-          //     self.bins.push([]);
-          //   }
-          // }
-
           // let center = {x:40,y:100,z:40};//, initial_bin = computeIndex(center.x, center.y);
           for(let i = 0; i < flock_size; i++){
             let center = {x:40 + i*25,y:100,z:40+ i*25};
@@ -151,17 +148,37 @@ Assignment 3
     function avoid_object(boid){
       let force = createVec();
       /* iterate over the objects and check to see if we are within striking distance */
+
+      let newDir = new THREE.Vector3(boid.velocity.x, boid.velocity.y, boid.velocity.z);
+      let pos = new THREE.Vector3();
+      pos.addVectors(newDir, boid.model.position);
+
+      let raycaster = new THREE.Raycaster(boid.model.position, newDir, 0, boid.sight*100),
+        intersects = raycaster.intersectObjects( self.scene.getObjectByName( "sphereGroup" ).children );
+
+
+      for(let intersect of intersects){
+        let normal = new THREE.Vector3();
+        let distanceCM = intersect.distance/10.0;
+        normal.subVectors(intersect.point, intersect.object.position);
+        normal.multiplyScalar((0.1) / (distanceCM*(distanceCM+0.01)));
+        force = add(force, {x:normal.x, y:normal.y, z:normal.z});
+      }
+
+
       for(let obstacle of self.objects){
-        let visible = dot(boid.velocity, obstacle.normal);
-        if(visible < 0){
-          /* get the distance to the wall */
-          let distance_target = difference(obstacle.center,boid.position),
+        if(obstacle.type === "wall"){
+          let visible = dot(boid.velocity, obstacle.normal);
+          if(visible < 0){
+            /* get the distance to the wall */
+            let distance_target = difference(obstacle.center,boid.position),
               distance = Math.abs(dot(distance_target, obstacle.normal));
-          /* If we can see the wall, react */
-          if(distance < boid.sight){
-            let distanceCM = distance/100.0,
+            /* If we can see the wall, react */
+            if(distance < boid.sight){
+              let distanceCM = distance/100.0,
                 f = multiply(obstacle.normal, (0.1) / (distanceCM*(distanceCM+0.01)) );
-            force = add(force, f);
+              force = add(force, f);
+            }
           }
         }
       }
@@ -227,7 +244,6 @@ Assignment 3
       }
 
       /* Direction to seek */
-      let goal = { x:100, y: 100, z: 0 };
       let avoidance_force = avoid_object(boid);
 
       let avoidance_mag = magnitude(avoidance_force);
@@ -281,36 +297,41 @@ Assignment 3
 
       }}
 
-      function render_boids_3D(){
+    function render_boids_3D(animation_count){
 
-        // if ( self.mixers.length > 0 ) {
-        //   for ( let i = 0; i < self.mixers.length; i++ ) {
-        //     self.mixers[ i ].update( clock.getDelta() );
-        //   }
-        // }
+      // if ( self.mixers.length > 0 ) {
+      //   for ( let i = 0; i < self.mixers.length; i++ ) {
+      //     self.mixers[ i ].update( clock.getDelta() );
+      //   }
+      // }
 
-        /* iterate over each of the boids
-           and render a triangle around its position */
-        for(let boid of self.boids){
-
-          boid.model.position.set(boid.position.x,boid.position.y,boid.position.z);
-          let unitVelocity = normalize(boid.velocity);
-
-
-
-          boid.model.lookAt(new THREE.Vector3(unitVelocity.x, unitVelocity.y, 0.0));
-
-          let newDir = new THREE.Vector3(boid.velocity.x, boid.velocity.y, boid.velocity.z);
-          let pos = new THREE.Vector3();
-          pos.addVectors(newDir, boid.model.position);
-          boid.model.lookAt(pos);
-
-          // boid.model.quaternion.setFromUnitVectors(new THREE.Vector3(-1,0,0),
-          //   new THREE.Vector3(unitVelocity.x, unitVelocity.y, 0.0) );
-          // console.log();
-        }
-
+      if(animation_count % 50 === 0){
+        goal.x = randomDirection();
+        goal.y = randomDirection();
+        goal.z = randomDirection();
+        console.log("change goal");
       }
+
+      /* iterate over each of the boids
+         and render a triangle around its position */
+      for(let boid of self.boids){
+
+        boid.model.position.set(boid.position.x,boid.position.y,boid.position.z);
+        let unitVelocity = normalize(boid.velocity);
+
+        boid.model.lookAt(new THREE.Vector3(unitVelocity.x, unitVelocity.y, 0.0));
+
+        let newDir = new THREE.Vector3(boid.velocity.x, boid.velocity.y, boid.velocity.z);
+        let pos = new THREE.Vector3();
+        pos.addVectors(newDir, boid.model.position);
+        boid.model.lookAt(pos);
+
+        // boid.model.quaternion.setFromUnitVectors(new THREE.Vector3(-1,0,0),
+        //   new THREE.Vector3(unitVelocity.x, unitVelocity.y, 0.0) );
+        // console.log();
+      }
+
+    }
 
     /* Renders the particles onto the screen */
     function render_boids_2D(ctx){
