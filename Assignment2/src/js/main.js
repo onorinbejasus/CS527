@@ -4,6 +4,7 @@
   let clock = new THREE.Clock(),
       camera, controls, scene, renderer, skeletonHelper,
       transformations = {}, times = [],
+      looping_transforms = {}, looping_times = {},
       transformations_static = [],
       animation_then, animation_count = 0, total_elapsed = 0,
       t = 0, idx = 0, flag = false, pause = false, iterate = false;
@@ -53,7 +54,8 @@
 
       /* Find which frames we are between */
       let timeIdx = _.find(times, function(time) {
-        return time > total_elapsed/1e3; });
+        return time > total_elapsed/1e3;
+      });
 
       idx = _.indexOf(times, timeIdx);
       t = (now_milli-times[idx-1])/(timeIdx-times[idx-1]);
@@ -61,7 +63,7 @@
       flag = false;
       /* Iterate over each bone and calculate the next location */
       skeletonHelper.skeleton.bones.forEach(function(bone){
-        if(flag) return;
+
         /* Get the stored rotation and translation */
         let bone_transforms = _.get(transformations, "bones["+bone.name+"]");
         if(!bone_transforms) return;
@@ -83,9 +85,18 @@
           }
         }
         else {
-          total_elapsed = 0;
-          setInitialSkeleton();
-          flag = true;
+          // increment the times by the total time elapsed
+          if(!flag){
+            times = _.map(looping_times, function(time){ return time + total_elapsed });
+            flag = true;
+          }
+          bone_transforms = _.get(looping_transforms, "bones["+bone.name+"]");
+
+          if (bone_transforms.translation){
+            let position = bone.position;
+            bone_transforms.translation = _.map(bone_transforms.translation, function(pos){ return pos.add(position) });
+            // console.log(position);
+          }
         }
       });
 
@@ -122,7 +133,8 @@
 
         /* store the times */
         if(times.length === 0){
-            times = track.times;//.map(function(x) { return x * 10 });
+            times = track.times.slice(0,40);//.map(function(x) { return x * 10 });
+            looping_times = track.times.slice(15,40);//.map(function(x) { return x * 10 });
         }
 
         if(track.values.length === 8){
@@ -146,13 +158,15 @@
         for(i = 0; i+1 < rotArr.length; i+=3){
           interpolates.push(
             {
-              spline: new DeCastlejau(rotArr[i],rotArr[i+1],rotArr[i+2],rotArr[i+3] ),
-              start: times[i], end: times[i+3]
+              spline: new DeCastlejau(rotArr[i],rotArr[i+1],rotArr[i+2],rotArr[i+3] )//,
+              // start: times[i], end: times[i+3]
             }
             );
         }
         transformations[bone] = transformations[bone] || {};
-        transformations[bone].rotation = interpolates;
+        looping_transforms[bone] = looping_transforms[bone] || {};
+        transformations[bone].rotation = _.clone(interpolates).slice(0,12);
+        looping_transforms[bone].rotation = _.clone(interpolates).slice(5,12);
       }
       else {
         let transArr = [];
@@ -160,7 +174,8 @@
 
         /* store the times */
         if(times.length === 0){
-          times = track.times;//.map(function(x) { return x * 10 });
+          times = track.times.slice(0,40);//.map(function(x) { return x * 10 });
+          looping_times = track.times.slice(15,40);//.map(function(x) { return x * 10 });
         }
 
         if(track.values.length === 6){
@@ -175,7 +190,9 @@
           transArr.push(new THREE.Vector3(track.values[i],track.values[i+1],track.values[i+2]));
         }
         transformations[bone] = transformations[bone] || {};
-        transformations[bone].translation = transArr;
+        looping_transforms[bone] = looping_transforms[bone] || {};
+        transformations[bone].translation = _.clone(transArr).slice(0, 40);
+        looping_transforms[bone].translation = _.clone(transArr).slice(15, 40);
       }
     });
   }
@@ -231,7 +248,7 @@
 
   function init() {
     /* Load the BVH models*/
-    loadBVH("models/bvh/Male1_C11_RunTurnLeft90.bvh").then(function(result){
+    loadBVH("models/bvh/Male_Running.bvh").then(function(result){
       /* Setup the model once the async data fetch resolves  */
       setupSkeleton(result);
     });
