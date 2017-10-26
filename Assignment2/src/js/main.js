@@ -14,6 +14,7 @@
 
   let render = function() {
     renderer.render(scene, camera);
+    camera.lookAt(boneMap.bones["Hips"]);
   };
 
   /* based on the request animation example here: http://jsfiddle.net/m1erickson/CtsY3/*/
@@ -76,12 +77,13 @@
 
         if(idx > -1){
           let rotIdx = parseInt(Math.floor(idx/3));
-          // if(bone_transforms.translation){
-          //   /* Get the rotation and translation */
-          //   let trans  = bone_transforms.translation[idx],
-          //       trans_last = bone_transforms.translation[idx-1];
-          //   bone.position.lerpVectors(trans_last,trans,t);
-          // }
+          if(bone_transforms.translation){
+            /* Get the rotation and translation */
+            let trans  = bone_transforms.translation[idx],
+                trans_last = bone_transforms.translation[idx-1];
+            bone.position.lerpVectors(trans_last,trans,t);
+            camera.position.lerpVectors(trans_last,trans,t);
+          }
 
           if(bone_transforms.rotation[rotIdx]){
             /* Get the rotation and translation */
@@ -105,7 +107,7 @@
           }
 
           /* Set the new transformations */
-          let loop = _.get(looping_transforms, "bones["+bone.name+"]");
+          let loop = _.clone(_.get(looping_transforms, "bones["+bone.name+"]"));
           if (loop.translation){
             /* Save the last translation */
             let previous_translation = _.clone(bone_transforms.translation.slice(-1)[0]);
@@ -139,6 +141,7 @@
   function constructBSplines(tracks){
     tracks.forEach(function(track){
       let bone = track.name.split('.')[1];
+
       /* construct the interpolates for the rotations */
       if(track.constructor.name === "QuaternionKeyframeTrack"){
         let rotArr = [], loopRotArr = [];
@@ -261,7 +264,7 @@
 
   function setupSkeleton(result) {
       skeletonHelper = new THREE.SkeletonHelper( result.skeleton.bones[ 0 ] );
-      skeletonHelper.skeleton = result.skeleton; // allow animation mixer to bind to SkeletonHelper directly
+      skeletonHelper.skeleton = result.skeleton;
 
       let boneContainer = new THREE.Group();
       boneContainer.add( result.skeleton.bones[ 0 ] );
