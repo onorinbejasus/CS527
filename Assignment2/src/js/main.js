@@ -7,7 +7,8 @@
       looping_transforms = {}, looping_times = {},
       transformations_static = [],
       animation_then, animation_count = 0, total_elapsed = 0,
-      t = 0, idx = 0, flag = false, pause = false, iterate = false;
+      t = 0, idx = 0, flag = false, pause = false, iterate = false,
+      loop_count = 0;
 
   let boneMap = {bones:{}};
 
@@ -60,9 +61,14 @@
       idx = _.indexOf(times, timeIdx);
       t = (now_milli-times[idx-1])/(timeIdx-times[idx-1]);
 
+      if(flag){
+        console.log()
+      }
+
       flag = false;
+
       /* Iterate over each bone and calculate the next location */
-      skeletonHelper.skeleton.bones.forEach(function(bone){
+      skeletonHelper.skeleton.bones.forEach(function(bone){alk
 
         /* Get the stored rotation and translation */
         let bone_transforms = _.get(transformations, "bones["+bone.name+"]");
@@ -70,12 +76,12 @@
 
         if(idx > -1){
           let rotIdx = parseInt(Math.floor(idx/3));
-          if(bone_transforms.translation){
-            /* Get the rotation and translation */
-            let trans  = bone_transforms.translation[idx],
-                trans_last = bone_transforms.translation[idx-1];
-            bone.position.lerpVectors(trans_last,trans,t);
-          }
+          // if(bone_transforms.translation){
+          //   /* Get the rotation and translation */
+          //   let trans  = bone_transforms.translation[idx],
+          //       trans_last = bone_transforms.translation[idx-1];
+          //   bone.position.lerpVectors(trans_last,trans,t);
+          // }
 
           if(bone_transforms.rotation[rotIdx]){
             /* Get the rotation and translation */
@@ -87,26 +93,28 @@
         else {
           // increment the times by the total time elapsed
           if(!flag){
+            loop_count++;
+            console.log(loop_count);
             times = _.map(looping_times, function(time){ return time + total_elapsed });
+            //times.unshift(total_elapsed);
             flag = true;
           }
-          bone_transforms = _.get(looping_transforms, "bones["+bone.name+"]");
 
-          if (bone_transforms.translation){
-            let position = bone.position;
-            bone_transforms.translation = _.map(bone_transforms.translation, function(pos){ return pos.add(position) });
-            // console.log(position);
+          /* Set the new transformations */
+          let loop = _.get(looping_transforms, "bones["+bone.name+"]");
+          if (loop.translation){
+            /* Save the last translation */
+            let previous_translation = _.clone(bone_transforms.translation.slice(-1)[0]);
+            loop.translation = _.map(loop.translation, function(pos){
+              let addpos = new THREE.Vector3();
+              addpos.addVectors(pos, previous_translation);
+              return addpos;
+            });
+            //loop.translation.unshift(previous_translation);
           }
+          transformations["bones["+bone.name+"]"] = _.clone(loop);
         }
       });
-
-      // //setInitialSkeleton();
-      // if(flag){
-      //   times = times.map(function(x) { return x += total_elapsed/1e3; });
-      //   _.toPairs(transformations).forEach(function(p){
-      //
-      //   });
-      // }
 
       /* Render the scene */
       render();
@@ -128,13 +136,15 @@
       let bone = track.name.split('.')[1];
       /* construct the interpolates for the rotations */
       if(track.constructor.name === "QuaternionKeyframeTrack"){
-        let rotArr = [];
+        let rotArr = [], loopRotArr = [];
         let i = 0;
 
         /* store the times */
         if(times.length === 0){
-            times = track.times.slice(0,40);//.map(function(x) { return x * 10 });
-            looping_times = track.times.slice(15,40);//.map(function(x) { return x * 10 });
+            times = track.times.slice(0,33);//.map(function(x) { return x * 10 });
+            looping_times = track.times.slice(15,33);//.map(function(x) { return x * 10 });
+            /* normalize the values to start at the next time step after the animation loop*/
+            looping_times = _.map(looping_times, function(time){return time - looping_times[0]});
         }
 
         if(track.values.length === 8){
@@ -159,14 +169,33 @@
           interpolates.push(
             {
               spline: new DeCastlejau(rotArr[i],rotArr[i+1],rotArr[i+2],rotArr[i+3] )//,
-              // start: times[i], end: times[i+3]
             }
             );
         }
+
         transformations[bone] = transformations[bone] || {};
-        looping_transforms[bone] = looping_transforms[bone] || {};
         transformations[bone].rotation = _.clone(interpolates).slice(0,12);
-        looping_transforms[bone].rotation = _.clone(interpolates).slice(5,12);
+
+        /* iterate over the tracks and stores the looping rotations */
+        for(i = 15; i < 35; i+=4){
+          loopRotArr.push(
+            new THREE.Quaternion(track.values[i],track.values[i+1],
+              track.values[i+2],track.values[i+3])
+          );
+        }
+
+        let loop_interpolates = [];
+        /* Make the looping interpolates */
+        for(i = 0; i+1 < loopRotArr.length; i+=3){
+          loop_interpolates.push(
+            {
+              spline: new DeCastlejau(loopRotArr[i],loopRotArr[i+1],loopRotArr[i+2],loopRotArr[i+3] )//,
+            }
+          );
+        }
+
+        looping_transforms[bone] = looping_transforms[bone] || {};
+        looping_transforms[bone].rotation = _.clone(loop_interpolates);
       }
       else {
         let transArr = [];
@@ -174,8 +203,10 @@
 
         /* store the times */
         if(times.length === 0){
-          times = track.times.slice(0,40);//.map(function(x) { return x * 10 });
-          looping_times = track.times.slice(15,40);//.map(function(x) { return x * 10 });
+          times = track.times.slice(0,33);//.map(function(x) { return x * 10 });
+          looping_times = track.times.slice(15,33);//.map(function(x) { return x * 10 });
+          /* normalize the values to start at the next time step after the animation loop*/
+          looping_times = _.map(looping_times, function(time){return time - looping_times[0]});
         }
 
         if(track.values.length === 6){
@@ -191,8 +222,15 @@
         }
         transformations[bone] = transformations[bone] || {};
         looping_transforms[bone] = looping_transforms[bone] || {};
-        transformations[bone].translation = _.clone(transArr).slice(0, 40);
-        looping_transforms[bone].translation = _.clone(transArr).slice(15, 40);
+        transformations[bone].translation = _.clone(transArr).slice(0, 33);
+
+        looping_transforms[bone].translation = _.clone(transArr).slice(15, 33);
+        /* normalize the translations in regards to the first */
+        looping_transforms[bone].translation = _.map(looping_transforms[bone].translation, function(pos){
+          let addpos = new THREE.Vector3();
+          addpos.subVectors(pos, looping_transforms[bone].translation[0]);
+          return addpos;
+        });
       }
     });
   }
