@@ -11,10 +11,11 @@
       loop_count = 0, looping = false;
 
   let boneMap = {bones:{}};
+  let cam = new THREE.Vector3(715, 390, 458);
 
   let render = function() {
     renderer.render(scene, camera);
-    camera.lookAt(boneMap.bones["Hips"]);
+    // camera.lookAt(boneMap.bones["Hips"]);
   };
 
   /* based on the request animation example here: http://jsfiddle.net/m1erickson/CtsY3/*/
@@ -23,7 +24,7 @@
     requestAnimationFrame(animate.bind(null,interval));
 
     // calculate elapsed time since last loop
-    controls.update();
+    // controls.update();
 
     // calculate elapsed time since last loop
     let now = Date.now(),
@@ -81,8 +82,11 @@
             /* Get the rotation and translation */
             let trans  = bone_transforms.translation[idx],
                 trans_last = bone_transforms.translation[idx-1];
-            bone.position.lerpVectors(trans_last,trans,t);
-            camera.position.lerpVectors(trans_last,trans,t);
+
+            let lerpped = new THREE.Vector3().lerpVectors(trans_last,trans,t);
+            bone.position.set(lerpped.x, lerpped.y, lerpped.z);
+
+            camera.position.set(cam.x + lerpped.x, cam.y, cam.z + lerpped.z);
           }
 
           if(bone_transforms.rotation[rotIdx]){
@@ -293,21 +297,23 @@
   }
 
   function init() {
-    /* Load the BVH models*/
-    loadBVH("models/bvh/Male_Running.bvh").then(function(result){
-      /* Setup the model once the async data fetch resolves  */
-      setupSkeleton(result);
-    });
 
     camera = new THREE.PerspectiveCamera( 60, window.innerWidth / window.innerHeight, 1, 10000 );
-    camera.position.set( 715, 390, 458 );
 
+    camera.position.set( 715, 390, 458 );
+    camera.lookAt(new THREE.Vector3());
     controls = new THREE.OrbitControls( camera );
     controls.minDistance = 100;
     controls.maxDistance = 1500;
 
     scene = new THREE.Scene();
     scene.background = new THREE.Color( 0xeeeeee );
+
+    /* Load the BVH models*/
+    loadBVH("models/bvh/Male_Running.bvh").then(function(result){
+      /* Setup the model once the async data fetch resolves  */
+      setupSkeleton(result);
+    });
 
     let grid = new THREE.GridHelper( 400, 10 );
     grid.translateY(100);
