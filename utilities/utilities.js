@@ -3,6 +3,7 @@ Name: Timothy Luciani
 Class: CS527
 File: utilities.js
 */
+
 "use strict";
 const Utilities = function(){
   /* Global Definitions */
@@ -69,8 +70,49 @@ const Utilities = function(){
           return Math.acos(Vector_Utils.dot(a,b) / (a_mag*b_mag));
         },
 
+        /* Multiple all components of a with b */
+        simplifiedMatrixMatrixMultiply: function(a,b) {
+
+          let c = {};
+          _.keys(a).forEach(function(key){
+            c[key] = a[key] * b[key]
+          });
+
+          /* if the input is an array, return an array*/
+          if(_.isArray(a)){
+            return _.values(c);
+          }
+          else{
+            return c;
+          }
+        },
+
+        /* Matrix/Vector multiplication */
+        matrixVectorMultiply(a,b) {
+          /* Invalid sizes */
+          if(a[0].length !== b.length ) return null;
+          let c = [];
+          for(let i = 0; i < a.length; i++){
+            c.push(Vector_Utils.dot(a[i], b));
+          }
+          return c;
+        },
+
         /* Multiple all components of a with s */
         multiply: function(a, ...s) {
+
+          /* Check the type of arguments */
+          if(s.length === 1) {
+            /* Matrix Vector Multiplication */
+            if(_.isArray(a[0]) && _.isArray(s[0])){
+              return Vector_Utils.matrixVectorMultiply(a,s[0]);
+            }
+            /* Matrix Vector Multiplication */
+            else if(_.isPlainObject(a) && _.isPlainObject(s[0])){
+              return Vector_Utils.simplifiedMatrixMatrixMultiply(a, s[0]);
+            }
+          }
+
           let c = {};
           _.keys(a).forEach(function(key){
             c[key] = a[key];
@@ -107,15 +149,6 @@ const Utilities = function(){
           let c = {};
           _.keys(a).forEach(function(key){
             c[key] = a[key] << 1;
-          });
-          return c;
-        },
-
-        /* Multiple all components of a with s */
-        multiply_components: function(a,b) {
-          let c = {};
-          _.keys(a).forEach(function(key){
-            c[key] = a[key] * b[key]
           });
           return c;
         },
@@ -200,10 +233,10 @@ const Utilities = function(){
               let e = particle.radius,
               c = Utilities.Vector_Utils.dot(
                 Vector_Utils.subtract(particle.position, o.position),
-                Vector_Utils.multiply_components(o.normal, {x:1, y:Y_UP})),
+                Vector_Utils.simplifiedMatrixMatrixMultiply(o.normal, {x:1, y:Y_UP})),
 
               v = Utilities.Vector_Utils.dot(
-                particle.velocity, Vector_Utils.multiply_components(o.normal, {x:1, y:Y_UP})
+                particle.velocity, Vector_Utils.simplifiedMatrixMatrixMultiply(o.normal, {x:1, y:Y_UP})
               );
 
               /* Check if a collision occurred */

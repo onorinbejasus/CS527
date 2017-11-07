@@ -14,7 +14,6 @@ Assignment 3
           difference   = Utilities.Vector_Utils.subtract,
           angleBetween = Utilities.Vector_Utils.angleBetween,
           multiply     = Utilities.Vector_Utils.multiply,
-          multiply_components     = Utilities.Vector_Utils.multiply_components,
           divide       = Utilities.Vector_Utils.divide,
           limit       = Utilities.Vector_Utils.limit,
           magnitude    = Utilities.Vector_Utils.magnitude,
@@ -259,7 +258,7 @@ Assignment 3
 
         /* add the force to the other directions */
         seeking_force = multiply(compute_seeking_force(goal, boid), (speed_remainder*dt));
-        seeking_force = multiply_components(seeking_force, other_direction);
+        seeking_force = multiply(seeking_force, other_direction);
 
         /* set the seeking force */
         steering_force = add(multiply(avoidance_force, 1.5), seeking_force);

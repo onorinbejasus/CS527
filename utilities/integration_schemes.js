@@ -20,7 +20,17 @@ let Integration = function(CONSTANT_FORCES){
         limit = Utilities.Vector_Utils.limit,
         create_particle = Utilities.Model_Utils.createParticle3D;
 
-  function clearAndAccumulateForces(p,other_forces,dt) {
+  const RK4_A = [0, 0.5, 0.5, 1],
+        RK4_B =
+          [
+            [0,   0,   0, 0],
+            [0.5, 0,   0, 0],
+            [0,   0.5, 0, 0],
+            [0,   0,   1, 0]
+          ],
+        RK4_C = [1/3, 1/6, 1/6, 1/3];
+
+    function clearAndAccumulateForces(p,other_forces,dt) {
     /* Clear the previous forces */
     p.forces = Utilities.Vector_Utils.zero(p.forces);
     /* Accumulate the constant forces */
@@ -47,6 +57,36 @@ let Integration = function(CONSTANT_FORCES){
     /* convert back to cm */
     if(!isNaN(d_x.y) && isFinite(d_x.y))
       p.position = d_x;
+  }
+
+  /**
+   * RK4 Integration Butcher's Tab.
+   * @constructor
+   * @param {function} ODE - Calculates the ODE and returns an {array} of results
+   * @param {array} y0 - An array of initial y conditions.
+   * @param {float} t - t_i, used to calculate t_i+1
+   * @param {float} h, time step
+   */
+  function RK_Tableau(ODE, y0, t, h) {
+
+    /* Intermediate steps */
+    let k = [];
+
+    /* Pre-compute h*A */
+    let hA = multiply(RK4_A, h), hB;
+
+    /* Iterate over and compute the intermediate steps */
+    for(let i = 0; i < RK4_C.length; i++){
+
+      /* Compute K * B */
+      if(i > 0) {
+        hB = multiply(RK4_B[i], k[i-1]);
+      }
+
+
+
+    }
+
   }
 
   /* RK4 Integration */
