@@ -47,15 +47,18 @@ let Integration = function(CONSTANT_FORCES){
   /* Euler Integration */
   function euler(p, forces, options) {
     /* Check to see if any non-constant forces were passed */
-    let other_forces = forces || [];
-      /* Convert back to cm */
-        // dt_cm = options.dt * 100.0;
+    let other_forces = forces || [],
+        p_prime = _.clone(p);
+
+    p_prime.position = Utilities.Vector_Utils.create_vector(options.y0[0]);
+    p_prime.velocity = Utilities.Vector_Utils.create_vector(options.y0[1]);
+
     /* Accumulate the forces on the particle and calculate the acceleration */
-    let acceleration = Utilities.Vector_Utils.toVector(clearAndAccumulateForces(p, other_forces)),
+    let acceleration = Utilities.Vector_Utils.toVector(clearAndAccumulateForces(p_prime, other_forces)),
         /* Calculate the new velocity */
-        d_v = add(options.y0[1], vector_utils.vectorScalarMultiply(acceleration, options.dt)),
+        d_v = add(options.y0[1],vector_utils.vectorScalarMultiply(acceleration, options.dt)),
         /* Use the new and previous velocity to calculate the new position */
-        d_x = add(options.y0[0], vector_utils.vectorScalarMultiply(d_v, options.dt));
+        d_x = add(options.y0[0],vector_utils.vectorScalarMultiply(d_v, options.dt));
     return [d_x, d_v];
   }
 
@@ -81,7 +84,7 @@ let Integration = function(CONSTANT_FORCES){
           hBk = _.chunk(vector_utils.matrixVectorMultiply(k, hB), options.dimensions);
 
       /* Add the step to the matrix */
-      let solution = _.flatten(ODE({y0:add(y0,hBk), dt:hA+h}));
+      let solution = _.flatten(ODE({y0:add(y0,hBk), dt:hA}));
       for(let ii = 0; ii < solution.length; ii++)
         k[ii][i] = solution[ii];
       }
@@ -90,8 +93,8 @@ let Integration = function(CONSTANT_FORCES){
     /* This will multiply scale each of the ODE's output
     *  Now we want a matrix for the dot product
     * */
-    /* returned y_dot */
-    return multiply(k, RK4_C);
+    /* return y prime */
+    return vector_utils.matrixVectorMultiply(k, RK4_C);
   }
 
   /* RK4 Integration */
@@ -105,7 +108,7 @@ let Integration = function(CONSTANT_FORCES){
     /* K1 -- Euler */
     let k1 = multiply(acceleration,dt),
         /* Save k1/2.0 for later use */
-        k1over2 = shift_divide(k1, 2.0),
+        k1over2 = divide(k1, 2.0),
         /* Euler Velocity = v*dt */
         dv_1 = p.velocity,
         /* Calculate the euler midpoint position: p1 = p0 * (v*dt)/2.0 */
@@ -117,12 +120,12 @@ let Integration = function(CONSTANT_FORCES){
     /* K2 -- First Midpoint */
     let k2 = multiply(acceleration,dt),
         /* Save k2/2.0 for later use */
-        k2over2 = shift_divide(k2,2.0),
+        k2over2 = divide(k2,2.0),
         /* Midpoint velocity: d_v2 = dt * (v0 + k1/2.0) */
         dv_2 = add(p.velocity, k1over2),
         /* Calculate the midpoint position: p2 = p0 * (v*dt)/2.0 */
         p2 = create_particle(
-            add(p.position, shift_divide( multiply(dv_2,dt_cm),2.0) ), dv_2, p.name );
+            add(p.position, divide( multiply(dv_2,dt_cm),2.0) ), dv_2, p.name );
 
     /* Calculate the acceleration at the first midpoint position */
     acceleration = clearAndAccumulateForces(p2,other_forces,dt);
@@ -143,21 +146,31 @@ let Integration = function(CONSTANT_FORCES){
         dv_4 = add(p.velocity, k3);
 
     /* Set the new position */
-    let dvt = add(vector_utils.multiply(dv_1, 0.16667),
-                  vector_utils.multiply(dv_2, 0.33334),
-                  vector_utils.multiply(dv_3, 0.33334),
-                  vector_utils.multiply(dv_4, 0.16667)),
-
-    /* Set the new position */
-    p_prime = vector_utils.multiply(dvt,dt_cm),
-    /* Set the new velocity */
+    // let dvt = add(vector_utils.multiply(dv_1, 0.16667),
+    //               vector_utils.multiply(dv_2, 0.33334),
+    //               vector_utils.multiply(dv_3, 0.33334),
+    //               vector_utils.multiply(dv_4, 0.16667)),
+    let
     v_prime = //limit(
         add(
             vector_utils.multiply(k1, 0.16667),
             vector_utils.multiply(k2, 0.33334),
             vector_utils.multiply(k3, 0.33334),
             vector_utils.multiply(k4, 0.16667)
-        )//, p.maxSpeed)
+        ),//, p.maxSpeed)
+
+
+    /* Set the new position */
+    p_prime = vector_utils.multiply(v_prime,dt_cm);
+
+    /* Set the new velocity */
+    // v_prime = //limit(
+    //     add(
+    //         vector_utils.multiply(k1, 0.16667),
+    //         vector_utils.multiply(k2, 0.33334),
+    //         vector_utils.multiply(k3, 0.33334),
+    //         vector_utils.multiply(k4, 0.16667)
+    //     )//, p.maxSpeed)
     ;
 
     // console.log(dvt);

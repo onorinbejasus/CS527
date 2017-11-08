@@ -298,10 +298,10 @@ Assignment 3
           }
         );
         /* Multiply by 100 to rescale to CM */
-        y_dot2 = multiply(y_dot2, dt * 100);
+        y_dot2 = multiply(y_dot2, dt);
 
         boid.position = add(boid.position, y_dot1[0]);
-        boid.velocity = limit(add(boid.velocity,y_dot1[1]), boid.maxSpeed);
+        boid.velocity = limit( add(boid.velocity,y_dot1[1]), boid.maxSpeed);
 
         /* Get the indices */
         // let boid_index = self.bins[boid.bin].indexOf(boid),

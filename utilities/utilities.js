@@ -34,50 +34,55 @@ const Utilities = function(){
   let Vector_Utils =  function() {
     return {
       /* Create a 2D empty vector */
-      create_vector() { return {x:0,y:0,z:0} },
+      create_vector(v) {
+        if(v){
+          return {x:v[0],y:v[1],z:v[2]}
+        }
+        return {x:0,y:0,z:0}
+        },
       toVector(v) { return _.values(v); },
-
-      /* Add all components of a and b*/
-      // add: function(a, ...b) {
-      //   let c = {};
-      //   /* previous implementation for x,y,z vectors */
-      //   if(_.isPlainObject(a)){
-      //     _.keys(a).forEach(function(key){
-      //       c[key] = a[key];
-      //       for(let B of b){
-      //         c[key] += B[key];
-      //       }
-      //     });
-      //   }
-      //   /* Add two 'array' vectors */
-      //   else if(_.isArray(a[0]) && _.isArray(b[0])) {
-      //     c = [];
-      //     for(let i = 0; i < a.length; i++){
-      //       c.push(Vector_Utils.add(a[i], b[0][i]))
-      //     }
-      //     return c;
-      //   }
-      //   /* Array addition */
-      //   else {
-      //     c = [];
-      //     for(let i = 0; i < a.length; i++){
-      //       c[i] = a[i] + b[0][i];
-      //     }
-      //   }
-      //   return c;
-      // },
 
       /* Add all components of a and b*/
       add: function(a, ...b) {
         let c = {};
-        _.keys(a).forEach(function(key){
-          c[key] = a[key];
-          for(let B of b){
-            c[key] += B[key];
+        /* previous implementation for x,y,z vectors */
+        if(_.isPlainObject(a)){
+          _.keys(a).forEach(function(key){
+            c[key] = a[key];
+            for(let B of b){
+              c[key] += B[key];
+            }
+          });
+        }
+        /* Add two 'array' vectors */
+        else if(_.isArray(a[0]) && _.isArray(b[0])) {
+          c = [];
+          for(let i = 0; i < a.length; i++){
+            c.push(Vector_Utils.add(a[i], b[0][i]))
           }
-        });
+          return c;
+        }
+        /* Array addition */
+        else {
+          c = [];
+          for(let i = 0; i < a.length; i++){
+            c[i] = a[i] + b[0][i];
+          }
+        }
         return c;
       },
+
+      /* Add all components of a and b*/
+      // add: function(a, ...b) {
+      //   let c = {};
+      //   _.keys(a).forEach(function(key){
+      //     c[key] = a[key];
+      //     for(let B of b){
+      //       c[key] += B[key];
+      //     }
+      //   });
+      //   return c;
+      // },
 
       /* Difference all components of a and b */
       subtract: function(a, ...b) {
@@ -213,12 +218,24 @@ const Utilities = function(){
 
       multiply: function(a, ...s) {
         let c = {};
-        _.keys(a).forEach(function(key){
-          c[key] = a[key];
-          for(let S of s){
-            c[key] *= S;
+          if(_.isArray(a)){
+            c = [];
+            a.forEach(function(v){
+              let entry = v;
+              for(let S of s) {
+                entry *= S;
+              }
+              c.push(entry);
+            })
           }
-        });
+          else {
+            _.keys(a).forEach(function(key){
+              c[key] = a[key];
+              for(let S of s){
+                c[key] *= S;
+              }
+            });
+          }
         return c;
       },
 
