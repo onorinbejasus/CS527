@@ -8,12 +8,14 @@
       transformations_static = [],
       animation_then, animation_count = 0, total_elapsed = 0,
       t = 0, idx = 0, flag = false, pause = false, iterate = false,
-      loop_count = 0;
+      loop_count = 0, looping = false;
 
   let boneMap = {bones:{}};
+  let cam = new THREE.Vector3(715, 390, 458);
 
   let render = function() {
     renderer.render(scene, camera);
+    // camera.lookAt(boneMap.bones["Hips"]);
   };
 
   /* based on the request animation example here: http://jsfiddle.net/m1erickson/CtsY3/*/
@@ -22,7 +24,7 @@
     requestAnimationFrame(animate.bind(null,interval));
 
     // calculate elapsed time since last loop
-    controls.update();
+    // controls.update();
 
     // calculate elapsed time since last loop
     let now = Date.now(),
@@ -68,7 +70,7 @@
       flag = false;
 
       /* Iterate over each bone and calculate the next location */
-      skeletonHelper.skeleton.bones.forEach(function(bone){alk
+      skeletonHelper.skeleton.bones.forEach(function(bone){
 
         /* Get the stored rotation and translation */
         let bone_transforms = _.get(transformations, "bones["+bone.name+"]");
@@ -76,32 +78,40 @@
 
         if(idx > -1){
           let rotIdx = parseInt(Math.floor(idx/3));
-          // if(bone_transforms.translation){
-          //   /* Get the rotation and translation */
-          //   let trans  = bone_transforms.translation[idx],
-          //       trans_last = bone_transforms.translation[idx-1];
-          //   bone.position.lerpVectors(trans_last,trans,t);
-          // }
+          if(bone_transforms.translation){
+            /* Get the rotation and translation */
+            let trans  = bone_transforms.translation[idx],
+                trans_last = bone_transforms.translation[idx-1];
+
+            let lerpped = new THREE.Vector3().lerpVectors(trans_last,trans,t);
+            bone.position.set(lerpped.x, lerpped.y, lerpped.z);
+
+            camera.position.set(cam.x + lerpped.x, cam.y, cam.z + lerpped.z);
+          }
 
           if(bone_transforms.rotation[rotIdx]){
             /* Get the rotation and translation */
             let rot = bone_transforms.rotation[rotIdx];
             /* Interpolate the next rotation */
-            rot.spline.evaluate(t,bone.quaternion);
+            try{
+              rot.spline.evaluate(t,bone.quaternion);
+            }
+            catch(e){
+              console.log(rotIdx);
+            }
           }
         }
         else {
           // increment the times by the total time elapsed
           if(!flag){
             loop_count++;
-            console.log(loop_count);
-            times = _.map(looping_times, function(time){ return time + total_elapsed });
-            //times.unshift(total_elapsed);
+            let last_time = total_elapsed / 1000;
+            times = _.map(looping_times, function(time){ return time + last_time });
             flag = true;
           }
 
           /* Set the new transformations */
-          let loop = _.get(looping_transforms, "bones["+bone.name+"]");
+          let loop = _.clone(_.get(looping_transforms, "bones["+bone.name+"]"));
           if (loop.translation){
             /* Save the last translation */
             let previous_translation = _.clone(bone_transforms.translation.slice(-1)[0]);
@@ -113,6 +123,7 @@
             //loop.translation.unshift(previous_translation);
           }
           transformations["bones["+bone.name+"]"] = _.clone(loop);
+          looping = true;
         }
       });
 
@@ -134,6 +145,7 @@
   function constructBSplines(tracks){
     tracks.forEach(function(track){
       let bone = track.name.split('.')[1];
+
       /* construct the interpolates for the rotations */
       if(track.constructor.name === "QuaternionKeyframeTrack"){
         let rotArr = [], loopRotArr = [];
@@ -177,7 +189,7 @@
         transformations[bone].rotation = _.clone(interpolates).slice(0,12);
 
         /* iterate over the tracks and stores the looping rotations */
-        for(i = 15; i < 35; i+=4){
+        for(i = 60; i < 128; i+=4){
           loopRotArr.push(
             new THREE.Quaternion(track.values[i],track.values[i+1],
               track.values[i+2],track.values[i+3])
@@ -186,7 +198,7 @@
 
         let loop_interpolates = [];
         /* Make the looping interpolates */
-        for(i = 0; i+1 < loopRotArr.length; i+=3){
+        for(i = 0; i+2 < loopRotArr.length; i+=3){
           loop_interpolates.push(
             {
               spline: new DeCastlejau(loopRotArr[i],loopRotArr[i+1],loopRotArr[i+2],loopRotArr[i+3] )//,
@@ -256,7 +268,7 @@
 
   function setupSkeleton(result) {
       skeletonHelper = new THREE.SkeletonHelper( result.skeleton.bones[ 0 ] );
-      skeletonHelper.skeleton = result.skeleton; // allow animation mixer to bind to SkeletonHelper directly
+      skeletonHelper.skeleton = result.skeleton;
 
       let boneContainer = new THREE.Group();
       boneContainer.add( result.skeleton.bones[ 0 ] );
@@ -285,21 +297,23 @@
   }
 
   function init() {
-    /* Load the BVH models*/
-    loadBVH("models/bvh/Male_Running.bvh").then(function(result){
-      /* Setup the model once the async data fetch resolves  */
-      setupSkeleton(result);
-    });
 
     camera = new THREE.PerspectiveCamera( 60, window.innerWidth / window.innerHeight, 1, 10000 );
-    camera.position.set( 715, 390, 458 );
 
+    camera.position.set( 715, 390, 458 );
+    camera.lookAt(new THREE.Vector3());
     controls = new THREE.OrbitControls( camera );
     controls.minDistance = 100;
     controls.maxDistance = 1500;
 
     scene = new THREE.Scene();
     scene.background = new THREE.Color( 0xeeeeee );
+
+    /* Load the BVH models*/
+    loadBVH("models/bvh/Male_Running.bvh").then(function(result){
+      /* Setup the model once the async data fetch resolves  */
+      setupSkeleton(result);
+    });
 
     let grid = new THREE.GridHelper( 400, 10 );
     grid.translateY(100);
