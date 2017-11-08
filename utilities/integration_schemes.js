@@ -14,6 +14,8 @@ let Integration = function(CONSTANT_FORCES){
 
   /* Utility shortcuts */
   const multiply = Utilities.Vector_Utils.multiply,
+        dot = Utilities.Vector_Utils.dot,
+        transpose = Utilities.Vector_Utils.transpose,
         add = Utilities.Vector_Utils.add,
         divide = Utilities.Vector_Utils.divide,
         shift_divide = Utilities.Vector_Utils.shift_divide,
@@ -21,42 +23,39 @@ let Integration = function(CONSTANT_FORCES){
         create_particle = Utilities.Model_Utils.createParticle3D;
 
   const RK4_A = [0, 0.5, 0.5, 1],
-        RK4_B =
+        RK4_B = Utilities.Matrix_Utils.createAndSet(
           [
             [0,   0,   0, 0],
             [0.5, 0,   0, 0],
             [0,   0.5, 0, 0],
             [0,   0,   1, 0]
-          ],
+          ]),
         RK4_C = [1/3, 1/6, 1/6, 1/3];
 
-    function clearAndAccumulateForces(p,other_forces,dt) {
+  function clearAndAccumulateForces(p, other_forces, dt) {
     /* Clear the previous forces */
-    p.forces = Utilities.Vector_Utils.zero(p.forces);
+    let forces = Utilities.Vector_Utils.zero(p.forces);
     /* Accumulate the constant forces */
     for(let force of _.flatten([CONSTANT_FORCES, other_forces])){
-      p.forces = add(p.forces, force(p,dt));
+      forces = add(forces, force(p,dt));
     }
     /* return the acceleration*/
-    return divide(p.forces,p.mass);
+    return divide(forces,p.mass);
   }
 
   /* Euler Integration */
-  function euler(p,dt,forces) {
+  function euler(p, forces, y0, dt) {
     /* Check to see if any non-constant forces were passed */
-    let other_forces = forces || [];
+    let other_forces = forces || [],
+      /* Convert back to cm */
+        dt_cm = dt * 100.0;
     /* Accumulate the forces on the particle and calculate the acceleration */
     let acceleration = clearAndAccumulateForces(p, other_forces),
         /* Calculate the new velocity */
-        d_v = limit( add(p.velocity, multiply(acceleration, dt)), p.maxSpeed),
+        d_v = add(y0[1], multiply(acceleration, dt)),
         /* Use the new and previous velocity to calculate the new position */
-        d_x = add(p.position, multiply(d_v, dt * 100.0 /* Convert back to cm */));
-    /* Set the new velocity */
-    if(!isNaN(d_v.y) && isFinite(d_v.y))
-      p.velocity = d_v;
-    /* convert back to cm */
-    if(!isNaN(d_x.y) && isFinite(d_x.y))
-      p.position = d_x;
+        d_x = add(y0[0], multiply(d_v, dt_cm));
+    return [d_x, d_v];
   }
 
   /**
@@ -64,29 +63,31 @@ let Integration = function(CONSTANT_FORCES){
    * @constructor
    * @param {function} ODE - Calculates the ODE and returns an {array} of results
    * @param {array} y0 - An array of initial y conditions.
-   * @param {float} t - t_i, used to calculate t_i+1
    * @param {float} h, time step
    */
-  function RK_Tableau(ODE, y0, t, h) {
+  function RK_Tableau(ODE, y0, h) {
 
-    /* Intermediate steps */
-    let k = [];
-
-    /* Pre-compute h*A */
-    let hA = multiply(RK4_A, h), hB;
-
+    /* Intermediate steps: initializes mxn k vector
+    * IMPORTANT: This must be a vector so that the matrix multiplications work correctly
+    * */
+    let k = [...Array(RK4_C.length)].map(() => Array.from({length:y0.length}, () => [0,0,0] ));
     /* Iterate over and compute the intermediate steps */
     for(let i = 0; i < RK4_C.length; i++){
+      /* Pre-compute h*A and K*B*/
+      let hA  = RK4_A[i]*h,
+          hB  = multiply(RK4_B[i], h),
+          hBk = multiply(hB,transpose(k));
 
-      /* Compute K * B */
-      if(i > 0) {
-        hB = multiply(RK4_B[i], k[i-1]);
-      }
-
-
-
+      /* Add the increment to the matrix */
+      k[i] = ODE(hA, add(y0,hBk));
     }
-
+    /* Set the final result from based on the ODE */
+    /* This will multiply scale each of the ODE's output
+    *  Now we want a matrix for the dot product
+    * */
+    let kt = Utilities.Matrix_Utils.createAndSet(transpose(k));
+    /* returned y_dot */
+    return multiply(kt, RK4_C);
   }
 
   /* RK4 Integration */
@@ -153,6 +154,7 @@ let Integration = function(CONSTANT_FORCES){
   }
 
   return {
+    Runge_Kutta: RK_Tableau,
     euler_step: euler,
     RK4_step: RK4
   }

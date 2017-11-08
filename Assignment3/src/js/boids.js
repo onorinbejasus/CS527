@@ -278,9 +278,24 @@ Assignment 3
     }
 
     function flock(dt) {
+      let ODE = Solver.euler_step, y_dot;
       for(let boid of self.boids) {
         /* Step forward in time */
-        Solver.RK4_step(boid, dt,[compute_flocking_force]);
+        // Solver.RK4_step(boid, dt,[compute_flocking_force]);
+        y_dot = Solver.Runge_Kutta(
+          /* ODE solver function ==> returns the new position and velocity */
+          ODE.bind(null, boid, [compute_flocking_force]),
+          /* y0 -- Initial y */
+          [_.values(boid.position), _.values(boid.velocity)],
+          /* time step plus a time number to avoid division by 0*/
+          dt
+        );
+
+        /* Multiply by 100 to rescale to CM */
+        y_dot = multiply(y_dot, dt * 100);
+
+        boid.position = add(boid.position, y_dot[0]);
+        boid.velocity = limit( add(boid.velocity,y_dot[1]), boid.maxSpeed);
 
         /* Get the indices */
         // let boid_index = self.bins[boid.bin].indexOf(boid),
@@ -291,8 +306,6 @@ Assignment 3
         // }
         // boid.bin = new_bin;
         // self.bins[new_bin].push(boid);
-
-        boid.velocity = limit(boid.velocity, boid.maxSpeed);
 
       }}
 

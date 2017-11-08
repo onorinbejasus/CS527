@@ -25,14 +25,15 @@ Assignment 3
 
     // calculate elapsed time since last loop
     let now = Date.now(),
-      elapsed = now - animation_then;
+      elapsed = now - animation_then + Number.EPSILON;
 
     // if enough time has elapsed, draw the next frame
     if (elapsed > interval) {
       animation_count++;
-      // Get ready for next frame by setting then=now, but...
-      animation_then = now - (elapsed % interval);
+      // Get ready for next frame by setting then=now
+      animation_then = now - (elapsed % interval) ;
 
+      /* Animate the boids */
       Boids_Manager.navigate(elapsed/1e3);
 
       /* Render the scene */
@@ -98,13 +99,13 @@ Assignment 3
     let material = new THREE.MeshBasicMaterial( {color: 0xffff00} );
 
     let sphere = new THREE.Mesh( geometry.clone(), material.clone() );
-      sphere.position.set(100, 100, 100)
+      sphere.position.set(100, 100, 100);
     let sphere1 = new THREE.Mesh( geometry.clone(), material.clone() );
-      sphere1.position.set(10, 250, -300)
+      sphere1.position.set(10, 250, -300);
     let sphere2 = new THREE.Mesh( geometry.clone(), material.clone() );
-    sphere2.position.set(350, 30, -10)
+    sphere2.position.set(350, 30, -10);
     let sphere3 = new THREE.Mesh( geometry.clone(), material.clone() );
-    sphere3.position.set(0, 50, 0)
+    sphere3.position.set(0, 50, 0);
     let sphere4 = new THREE.Mesh( geometry.clone(), material.clone() );
     sphere4.position.set(0, 350, 75);
 
