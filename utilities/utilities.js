@@ -35,22 +35,41 @@ const Utilities = function(){
     return {
       /* Create a 2D empty vector */
       create_vector() { return {x:0,y:0,z:0} },
+      toVector(v) { return _.values(v); },
+
+      /* Add all components of a and b*/
+      // add: function(a, ...b) {
+      //   let c = {};
+      //   /* previous implementation for x,y,z vectors */
+      //   if(_.isPlainObject(a)){
+      //     _.keys(a).forEach(function(key){
+      //       c[key] = a[key];
+      //       for(let B of b){
+      //         c[key] += B[key];
+      //       }
+      //     });
+      //   }
+      //   /* Add two 'array' vectors */
+      //   else if(_.isArray(a[0]) && _.isArray(b[0])) {
+      //     c = [];
+      //     for(let i = 0; i < a.length; i++){
+      //       c.push(Vector_Utils.add(a[i], b[0][i]))
+      //     }
+      //     return c;
+      //   }
+      //   /* Array addition */
+      //   else {
+      //     c = [];
+      //     for(let i = 0; i < a.length; i++){
+      //       c[i] = a[i] + b[0][i];
+      //     }
+      //   }
+      //   return c;
+      // },
+
       /* Add all components of a and b*/
       add: function(a, ...b) {
         let c = {};
-        /* Add two 'array' vectors */
-        if(_.isArray(a[0])) {
-          c = [];
-          for(let i = 0; i < b.length; i++){
-
-            for(let j = 0; j < b.length; j++){
-              c[i] = a[i][j] + b[j];
-            }
-
-          }
-          return c;
-        }
-
         _.keys(a).forEach(function(key){
           c[key] = a[key];
           for(let B of b){
@@ -178,59 +197,84 @@ const Utilities = function(){
         return c;
       },
 
+      /* Multiply each component of the vector v by a scalar s */
+      vectorScalarMultiply(v,s){
+       return _.map(v, _.curry(_.multiply)(s));
+      },
+
       /* Multiple all components of a with s */
-      multiply: function(a, ...s) {
+      multiply_components: function(a,b) {
         let c = {};
-        /* Check the type of arguments */
-        if(s.length === 1) {
-          /* Matrix-Vector Multiplication */
-          if(a.constructor === "Matrix" && _.isArray(s[0])){
-            return Vector_Utils.matrixVectorMultiply(a,s[0]);
-          }
-          /* Vector x Vector of vectors */
-          else if(_.isArray(a) && _.isArray(s[0])) {
-            if(a.length !== s[0][0].length) return null;
-            c = [];
-            let vec = s[0];
-            for(let i = 0; i < vec.length; i++){
-              c.push(Vector_Utils.dot(vec[i], a));
-            }
-            return c;
-          }
-          /* Vector Vector Multiplication */
-          else if(_.isPlainObject(a) && _.isPlainObject(s[0])){
-            return Vector_Utils.simplifiedMatrixMatrixMultiply(a, s[0]);
-          }
-          /* Vector-Matrix Multiplication */
-          else if(_.isArray(a) && s[0].constructor === "Matrix"){
-            return Vector_Utils.vectorMatrixMultiply(a, s[0]);
-          }
-        }
-
-        /* Vector * array of scalars */
-        if(_.isArray(a)){
-          c = [];
-          a.forEach(function(v){
-            let entry = v;
-            for(let S of s) {
-              entry *= S;
-            }
-            c.push(entry);
-          })
-        }
-
-        /* Object notation */
-        else{
-          _.keys(a).forEach(function(key){
-            c[key] = a[key];
-            for(let S of s){
-              c[key] *= S;
-            }
-          });
-        }
-
+        _.keys(a).forEach(function(key){
+          c[key] = a[key] * b[key]
+        });
         return c;
       },
+
+      multiply: function(a, ...s) {
+        let c = {};
+        _.keys(a).forEach(function(key){
+          c[key] = a[key];
+          for(let S of s){
+            c[key] *= S;
+          }
+        });
+        return c;
+      },
+
+      // /* Multiple all components of a with s */
+      // multiply: function(a, ...s) {
+      //   let c = {};
+      //   /* Check the type of arguments */
+      //   if(s.length === 1) {
+      //     /* Matrix-Vector Multiplication */
+      //     if(a.constructor === "Matrix" && _.isArray(s[0])){
+      //       return Vector_Utils.matrixVectorMultiply(a,s[0]);
+      //     }
+      //     /* Vector x Vector of vectors */
+      //     else if(_.isArray(a) && _.isArray(s[0])) {
+      //       if(a.length !== s[0][0].length) return null;
+      //       c = [];
+      //       let vec = s[0];
+      //       for(let i = 0; i < vec.length; i++){
+      //         c.push(Vector_Utils.dot(vec[i], a));
+      //       }
+      //       return c;
+      //     }
+      //     /* Vector Vector Multiplication */
+      //     else if(_.isPlainObject(a) && _.isPlainObject(s[0])){
+      //       return Vector_Utils.simplifiedMatrixMatrixMultiply(a, s[0]);
+      //     }
+      //     /* Vector-Matrix Multiplication */
+      //     else if(_.isArray(a) && s[0].constructor === "Matrix"){
+      //       return Vector_Utils.vectorMatrixMultiply(a, s[0]);
+      //     }
+      //   }
+      //
+      //   /* Vector * array of scalars */
+      //   if(_.isArray(a)){
+      //     c = [];
+      //     a.forEach(function(v){
+      //       let entry = v;
+      //       for(let S of s) {
+      //         entry *= S;
+      //       }
+      //       c.push(entry);
+      //     })
+      //   }
+      //
+      //   /* Object notation */
+      //   else{
+      //     _.keys(a).forEach(function(key){
+      //       c[key] = a[key];
+      //       for(let S of s){
+      //         c[key] *= S;
+      //       }
+      //     });
+      //   }
+      //
+      //   return c;
+      // },
 
       /* Divide all components of a by s */
       divide: function(a, ...s) {

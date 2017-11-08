@@ -14,6 +14,7 @@ Assignment 3
           difference   = Utilities.Vector_Utils.subtract,
           angleBetween = Utilities.Vector_Utils.angleBetween,
           multiply     = Utilities.Vector_Utils.multiply,
+          multiply_components     = Utilities.Vector_Utils.multiply_components,
           divide       = Utilities.Vector_Utils.divide,
           limit       = Utilities.Vector_Utils.limit,
           magnitude    = Utilities.Vector_Utils.magnitude,
@@ -258,7 +259,7 @@ Assignment 3
 
         /* add the force to the other directions */
         seeking_force = multiply(compute_seeking_force(goal, boid), (speed_remainder*dt));
-        seeking_force = multiply(seeking_force, other_direction);
+        seeking_force = multiply_components(seeking_force, other_direction);
 
         /* set the seeking force */
         steering_force = add(multiply(avoidance_force, 1.5), seeking_force);
@@ -278,24 +279,29 @@ Assignment 3
     }
 
     function flock(dt) {
-      let ODE = Solver.euler_step, y_dot;
+      let ODE = Solver.euler_step, y_dot1, y_dot2;
       for(let boid of self.boids) {
         /* Step forward in time */
-        // Solver.RK4_step(boid, dt,[compute_flocking_force]);
-        y_dot = Solver.Runge_Kutta(
+        y_dot1 = Solver.RK4_step(boid, dt,[compute_flocking_force]);
+
+        y_dot2 = Solver.Runge_Kutta(
           /* ODE solver function ==> returns the new position and velocity */
           ODE.bind(null, boid, [compute_flocking_force]),
           /* y0 -- Initial y */
           [_.values(boid.position), _.values(boid.velocity)],
           /* time step plus a time number to avoid division by 0*/
-          dt
+          dt,
+          {
+            numVars:2,
+            dimensions:3,
+            order: 4
+          }
         );
-
         /* Multiply by 100 to rescale to CM */
-        y_dot = multiply(y_dot, dt * 100);
+        y_dot2 = multiply(y_dot2, dt * 100);
 
-        boid.position = add(boid.position, y_dot[0]);
-        boid.velocity = limit( add(boid.velocity,y_dot[1]), boid.maxSpeed);
+        boid.position = add(boid.position, y_dot1[0]);
+        boid.velocity = limit(add(boid.velocity,y_dot1[1]), boid.maxSpeed);
 
         /* Get the indices */
         // let boid_index = self.bins[boid.bin].indexOf(boid),
