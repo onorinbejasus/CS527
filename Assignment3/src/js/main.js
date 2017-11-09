@@ -7,7 +7,7 @@ Assignment 3
 "use strict";
 (function(){
   let
-      animation_then, calculate_then,
+      animation_then, calculate_then, stats, container,
       camera, controls, scene, renderer;
 
   let animation_count = 0;
@@ -34,10 +34,11 @@ Assignment 3
       animation_then = now - (elapsed % interval) ;
 
       /* Animate the boids */
-      Boids_Manager.navigate(elapsed/1e3);
+      Boids_Manager.navigate(0.01);
 
       /* Render the scene */
       render(animation_count);
+      stats.update();
     }
   }
 
@@ -48,6 +49,9 @@ Assignment 3
   }
 
   function initialize() {
+
+    container = document.createElement( 'div' );
+    document.body.appendChild( container );
 
     camera = new THREE.PerspectiveCamera( 60, window.innerWidth / window.innerHeight, 1, 10000 );
     camera.position.set( 715, 0, 458 );
@@ -129,7 +133,12 @@ Assignment 3
     });
 
 
+    stats = new Stats();
+    container.appendChild( stats.dom );
+
     document.body.appendChild( renderer.domElement );
+
+
 
     window.addEventListener( 'resize', onWindowResize, false );
   }

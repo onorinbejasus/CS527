@@ -32,8 +32,8 @@ Assignment 3
       height: 400, width: 400, depth: 400,  binSize:50, width_binSize:1600/50, height_binSize:1200/50,
       boids : [], bins: [],
       particle_def: { position: {x:0,y:0,z:0}, velocity: {x:0,y:0,z:0}, forces: {x:0,y:0,z:0},
-                      length: 10.0, rotation:{pitch:0, yaw:0, roll:0}, sight: 50, mass: 1, radius: 5,
-                      separation: 30.0, maxSpeed: 2, maxForce: 0.03, name: -1, bin: -1, model:null}
+                      length: 10.0, rotation:{pitch:0, yaw:0, roll:0}, sight: 35, mass: 1, radius: 5,
+                      separation: 30.0, maxSpeed: 3, maxForce: 0.03, name: -1, bin: -1, model:null}
     };
 
     self.objects = [
@@ -247,7 +247,7 @@ Assignment 3
       let avoidance_force = avoid_object(boid);
 
       let avoidance_mag = magnitude(avoidance_force);
-      let max = boid.maxSpeed*2.0;
+      let max = boid.maxSpeed*4.0;
       /* Check the speed of the incoming boid */
       if(avoidance_mag > max){
         let speed_remainder = avoidance_mag - max,
@@ -262,7 +262,7 @@ Assignment 3
         seeking_force = multiply_components(seeking_force, other_direction);
 
         /* set the seeking force */
-        steering_force = add(multiply(avoidance_force, 1.5), seeking_force);
+        steering_force = add(multiply(avoidance_force, 1.0), seeking_force);
       }
       else {
         steering_force = multiply(compute_seeking_force(difference(goal, boid.position), boid), 0.05);
@@ -282,8 +282,8 @@ Assignment 3
       let ODE = Solver.euler_step, y_dot1, y_dot2;
       for(let boid of self.boids) {
         /* Step forward in time */
-        y_dot1 = Solver.RK4_step(boid, dt,[compute_flocking_force]);
-
+        //y_dot1 = Solver.RK4_step(boid, dt,[compute_flocking_force]);
+        //
         y_dot2 = Solver.Runge_Kutta(
           /* ODE solver function ==> returns the new position and velocity */
           ODE.bind(null, boid, [compute_flocking_force]),
@@ -297,11 +297,15 @@ Assignment 3
             order: 4
           }
         );
-        /* Multiply by 100 to rescale to CM */
-        y_dot2 = multiply(y_dot2, dt);
 
-        boid.position = add(boid.position, y_dot1[0]);
-        boid.velocity = limit( add(boid.velocity,y_dot1[1]), boid.maxSpeed);
+        let pos = Utilities.Vector_Utils.create_vector(y_dot2[0]);
+        let vel = Utilities.Vector_Utils.create_vector(y_dot2[1]);
+        /* Multiply by 100 to rescale to CM */
+        pos = multiply(pos, 100);
+        //vel = multiply(vel, 100);
+
+        boid.position = add(boid.position, pos);
+        boid.velocity = limit( add(boid.velocity, vel), boid.maxSpeed);
 
         /* Get the indices */
         // let boid_index = self.bins[boid.bin].indexOf(boid),

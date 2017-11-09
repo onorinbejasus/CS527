@@ -31,7 +31,7 @@ let Integration = function(CONSTANT_FORCES){
             [0,   0.5, 0, 0],
             [0,   0,   1, 0]
           ]),
-        RK4_C = [1/3, 1/6, 1/6, 1/3];
+        RK4_C = [1/6, 1/3, 1/3, 1/6];
 
   function clearAndAccumulateForces(p, other_forces, dt) {
     /* Clear the previous forces */
@@ -54,12 +54,12 @@ let Integration = function(CONSTANT_FORCES){
     p_prime.velocity = Utilities.Vector_Utils.create_vector(options.y0[1]);
 
     /* Accumulate the forces on the particle and calculate the acceleration */
-    let acceleration = Utilities.Vector_Utils.toVector(clearAndAccumulateForces(p_prime, other_forces)),
+    let acceleration = Utilities.Vector_Utils.toVector(clearAndAccumulateForces(p_prime, other_forces, options.dt)),
         /* Calculate the new velocity */
-        d_v = add(options.y0[1],vector_utils.vectorScalarMultiply(acceleration, options.dt)),
+        k = vector_utils.vectorScalarMultiply(acceleration, options.dt),
         /* Use the new and previous velocity to calculate the new position */
-        d_x = add(options.y0[0],vector_utils.vectorScalarMultiply(d_v, options.dt));
-    return [d_x, d_v];
+        l = vector_utils.vectorScalarMultiply(options.y0[1], options.dt);
+        return [l, k];
   }
 
   /**
@@ -82,9 +82,8 @@ let Integration = function(CONSTANT_FORCES){
       let hA  = RK4_A[i]*h,
           hB  = vector_utils.multiply(RK4_B[i], h),
           hBk = _.chunk(vector_utils.matrixVectorMultiply(k, hB), options.dimensions);
-
       /* Add the step to the matrix */
-      let solution = _.flatten(ODE({y0:add(y0,hBk), dt:hA}));
+      let solution = _.flatten(ODE({y0:add(y0,hBk), dt:h+hA} ));
       for(let ii = 0; ii < solution.length; ii++)
         k[ii][i] = solution[ii];
       }
@@ -94,7 +93,8 @@ let Integration = function(CONSTANT_FORCES){
     *  Now we want a matrix for the dot product
     * */
     /* return y prime */
-    return vector_utils.matrixVectorMultiply(k, RK4_C);
+    let output = vector_utils.matrixVectorMultiply(k, RK4_C);
+    return _.chunk(output, options.dimensions);
   }
 
   /* RK4 Integration */
@@ -146,32 +146,27 @@ let Integration = function(CONSTANT_FORCES){
         dv_4 = add(p.velocity, k3);
 
     /* Set the new position */
-    // let dvt = add(vector_utils.multiply(dv_1, 0.16667),
-    //               vector_utils.multiply(dv_2, 0.33334),
-    //               vector_utils.multiply(dv_3, 0.33334),
-    //               vector_utils.multiply(dv_4, 0.16667)),
-    let
-    v_prime = //limit(
-        add(
-            vector_utils.multiply(k1, 0.16667),
-            vector_utils.multiply(k2, 0.33334),
-            vector_utils.multiply(k3, 0.33334),
-            vector_utils.multiply(k4, 0.16667)
-        ),//, p.maxSpeed)
+    let dvt = add(
+        multiply(dv_1, 0.16667),
+        multiply(dv_2, 0.33334),
+        multiply(dv_3, 0.33334),
+        multiply(dv_4, 0.16667)),
 
+        p_prime = //add(p.position,
+            multiply(dvt,dt_cm)
+        //)
+        ,
 
-    /* Set the new position */
-    p_prime = vector_utils.multiply(v_prime,dt_cm);
-
-    /* Set the new velocity */
-    // v_prime = //limit(
-    //     add(
-    //         vector_utils.multiply(k1, 0.16667),
-    //         vector_utils.multiply(k2, 0.33334),
-    //         vector_utils.multiply(k3, 0.33334),
-    //         vector_utils.multiply(k4, 0.16667)
-    //     )//, p.maxSpeed)
-    ;
+        /* Set the new velocity */
+        v_prime = //limit(
+            add(//p.velocity,
+                multiply(k1, 0.16667),
+                multiply(k2, 0.33334),
+                multiply(k3, 0.33334),
+                multiply(k4, 0.16667)
+            )
+        //, p.maxSpeed)
+        ;
 
     // console.log(dvt);
     return [p_prime, v_prime];

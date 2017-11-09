@@ -33,14 +33,15 @@ const Utilities = function(){
   /* Vector Math Utilities */
   let Vector_Utils =  function() {
     return {
+      isNaN: function(v){ return isNaN( v.x||v[0] ) || isNaN( v.y||v[2] ) || isNaN( v.z||v[2] )  },
       /* Create a 2D empty vector */
-      create_vector(v) {
+      create_vector: function(v) {
         if(v){
           return {x:v[0],y:v[1],z:v[2]}
         }
         return {x:0,y:0,z:0}
         },
-      toVector(v) { return _.values(v); },
+      toVector: function(v) { return _.values(v); },
 
       /* Add all components of a and b*/
       add: function(a, ...b) {
