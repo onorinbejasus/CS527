@@ -11,7 +11,6 @@
 
     <script src="https://d3js.org/d3.v3.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/87/three.js"></script>
-    <script src="https://rawgit.com/imaya/zlib.js/develop/bin/zlib.min.js"></script>
     <script type="application/javascript" src="../utilities/OrbitControls.js"></script>
     <script type="application/javascript" src="../lib/js/stats.min.js"></script>
 
@@ -21,8 +20,7 @@
     <!-- SRC JS -->
     <script type="application/javascript" src="../utilities/utilities.js"></script>
     <script type="application/javascript" src="../utilities/integration_schemes.js"></script>
-    <script type="application/javascript" src="../utilities/modelLoaders.js"></script>
-    <script type="application/javascript" src="src/js/boids.js"></script>
+    <script type="application/javascript" src="src/js/simpleWalker2D.js"></script>
     <script type="application/javascript" src="src/js/main.js"></script>
 
 </head>
@@ -30,7 +28,8 @@
 <div class="container-fluid">
     <div class="row">
         <div class="col-8">
-            <canvas id="particleCanvas" class="background_air" width="1600" height="1200" style="border:1px solid #d3d3d3;"></canvas>
+            <canvas id="particleCanvas" class="background_air"
+                    width="1600" height="1200" style="border:1px solid #d3d3d3;"></canvas>
         </div>
     </div>
 </div>
