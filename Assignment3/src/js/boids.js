@@ -65,7 +65,7 @@ Assignment 3
      *  1) Create the boid particles */
     function initialize_system(flock_size, direction, scene) {
       Utilities.Model_Utils.setParticleDefinition(self.particle_def);
-      Solver = new Integration([]);
+      Solver = new Integration({scheme:"RK4", constant_forces:[]});
 
       self.scene = scene;
 
