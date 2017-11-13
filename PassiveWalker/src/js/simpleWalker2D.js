@@ -11,7 +11,9 @@ let Simple_Walker_2D = (function() {
   return function(global_options) {
 
     /* Initial conditions from the paper, derived from theoretical equations */
-    const theta0 = 0.970956,
+    const
+        gamma = global_options.gamma,
+        theta0 = 0.970956,
         theta1 = -0.270837,
         alpha   = -1.045203,
         c1      = 1.062895,
@@ -19,7 +21,9 @@ let Simple_Walker_2D = (function() {
 
     let Solver = null;
     /* Closure variable to track internal states */
-    let walker = {sign_flips:0, prev_check:0}, steps = 0;
+    let walker = {},
+    steps = 0,
+    collision_found = false;
 
     /* Equations:[theta_p,  =  [ -1   0                    0   0,   x  [theta_m,
     *             theta_pp,       0   cos(2 x theta_m)     0   0,       theta_mp,
@@ -57,12 +61,26 @@ let Simple_Walker_2D = (function() {
     function collision_check(theta, phi) {
 
       let collision = phi.toFixed(5) - (2.0 * theta.toFixed(5));
+      if(Math.abs(collision.toFixed(4)) < 0.0001){
+        collision_found = true;
+      }
+        // console.log([walker.theta, walker.theta_p], [walker.phi, walker.phi_p], collision);
 
-      console.log([walker.theta, walker.theta_p], [walker.phi, walker.phi_p], collision);
-      if(Math.abs(collision.toFixed(4)) < 0.001)
-        console.log([walker.theta, walker.theta_p], [walker.phi, walker.phi_p], collision);
+      return (Math.abs(collision.toFixed(4)) < 0.0001);
+    }
 
-      return (Math.abs(collision.toFixed(4)) < 0.001);
+    function update_walker(){
+      /* Update Hip position */
+      walker.hip = [
+        walker.stance_foot[0]-walker.L*Math.sin(walker.theta-gamma),
+        walker.stance_foot[1]+walker.L*Math.cos(walker.theta-gamma)
+      ];
+
+      /* Update Swing Foot position*/
+      walker.swing_foot = [
+        walker.hip[0]-walker.L*Math.sin(walker.phi-walker.theta+gamma),
+        walker.hip[1]-walker.L*Math.cos(walker.phi-walker.theta+gamma)
+      ];
     }
 
     function walk(dt) {
@@ -81,7 +99,6 @@ let Simple_Walker_2D = (function() {
           }
       );
 
-
       /* Check for collision with the ramp. If one occurred,
        * invoke the Poincare map to switch the legs  */
       /* Save the current state */
@@ -99,29 +116,75 @@ let Simple_Walker_2D = (function() {
         walker.theta_p = parseFloat(shift[0][1].toPrecision(5));
         walker.phi = parseFloat(shift[1][0].toPrecision(5));
         walker.phi_p = parseFloat(shift[1][1].toPrecision(5));
-
-        walker.sign_flips = 0;
-
-        console.log();
       }
 
+      /* Update model positions */
+      update_walker();
 
       steps++;
     }
 
-    function render_walker_2D() {
+    function render_walker_2D(options) {
+      if(!collision_found && steps % 20 === 0) {
+        update_walker();
+      }
 
+      /* Render the stance leg */
+      options.ctx.lineWidth = 2;
+      options.ctx.strokeStyle = "black";
+      Utilities.Render_Utils.drawLine(
+          options.ctx,
+          parseInt(walker.stance_foot[0]*options.multiplier+options.offset[0]),
+          options.height - parseInt(walker.stance_foot[1]*options.multiplier+options.offset[1]),
+          parseInt(walker.hip[0]*options.multiplier+options.offset[0]),
+          options.height - parseInt(walker.hip[1]*options.multiplier+options.offset[1])
+      );
+
+      /* Render the swing leg*/
+      options.ctx.strokeStyle = "red";
+      Utilities.Render_Utils.drawLine(
+          options.ctx,
+          parseInt(walker.swing_foot[0]*options.multiplier+options.offset[0]),
+          options.height - parseInt(walker.swing_foot[1]*options.multiplier+options.offset[1]),
+          parseInt(walker.hip[0]*options.multiplier+options.offset[0]),
+          options.height - parseInt(walker.hip[1]*options.multiplier+options.offset[1])
+      );
+
+    }
+
+    function initialize_walker_model(){
+      let w = {
+        theta   : tgamma3 + theta1*gamma,
+        theta_p : alpha * tgamma3 + (alpha*theta1 + c1) * gamma,
+        phi     : 2.0 * (tgamma3 + theta1*gamma),
+        phi_p   : tgamma3 + theta1*gamma *(1.0 - Math.cos(2.0 * tgamma3 + theta1*gamma)),
+        L:global_options.L,
+        stance_foot:[0,0]
+      };
+
+      /* Initial Hip position */
+      w.hip = [
+        w.stance_foot[0]-w.L*Math.sin(w.theta-gamma),
+        w.stance_foot[1]+w.L*Math.cos(w.theta-gamma)
+      ];
+
+      /* Initial Swing Foot position*/
+      w.swing_foot = [
+        w.hip[0]-w.L*Math.sin(w.phi-w.theta+gamma),
+        w.hip[1]-w.L*Math.cos(w.phi-w.theta+gamma)
+      ];
+
+      return w;
     }
 
     function initialize_system() {
       /* Setup the integrator */
       Solver = new Integration({scheme:"RK4", constant_forces:[]});
-      let gamma = global_options.gamma;
       /* Calculate the initial for stable walking based on the papers equations */
-      walker.theta   = tgamma3 + theta1*gamma;
-      walker.theta_p = alpha * tgamma3 + (alpha*theta1 + c1) * gamma;
-      walker.phi     = 2.0 * walker.theta;
-      walker.phi_p   = walker.theta_p *(1.0 - Math.cos(walker.phi));
+      let w = initialize_walker_model();
+      walker = _.clone(w);
+
+      return w;
     }
 
     return {

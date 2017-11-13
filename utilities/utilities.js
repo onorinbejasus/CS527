@@ -482,5 +482,17 @@ const Utilities = function(){
       }
   }();
 
-  return {Vector_Utils: Vector_Utils, Model_Utils: Model_Utils, Matrix_Utils: Matrix_Utils};
+  let Render_Utils = function() {
+    return{
+      drawLine(ctx, x0,y0, x1,y1){
+        ctx.beginPath();
+        ctx.moveTo(x0,y0);
+        ctx.lineTo(x1,y1);
+        ctx.stroke();
+      }
+    }
+  }();
+
+  return {Vector_Utils: Vector_Utils, Model_Utils: Model_Utils,
+          Render_Utils:Render_Utils, Matrix_Utils: Matrix_Utils};
 }();
