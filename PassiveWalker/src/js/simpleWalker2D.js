@@ -24,7 +24,8 @@ let Simple_Walker_2D = (function() {
     let walker = {},
         steps = 0,
         collision_found = false,
-        collision_sign = 0;
+        last_collision = 0,
+        prev = null;
 
     /* Equations:[theta_p,  =  [ -1   0                    0   0,   x  [theta_m,
     *             theta_pp,       0   cos(2 x theta_m)     0   0,       theta_mp,
@@ -63,36 +64,28 @@ let Simple_Walker_2D = (function() {
     function collision_check(theta, phi) {
 
       let collision = phi.toFixed(5) - (2.0 * theta.toFixed(5));
-      if(collision_sign === 0){
-        collision_sign = Math.sign(collision);
-      }
-      else {
-        if(Math.sign(collision) !== collision_sign){
-          let stance_leg =  Utilities.Vector_Utils.subtract(walker.stance_foot, walker.hip),
-              swing_leg  =  Utilities.Vector_Utils.subtract(walker.swing_foot, walker.hip);
 
-          let angle = Utilities.Vector_Utils.angleBetween(stance_leg, swing_leg);
-            if(angle > 0.4){
-              collision_found = !collision_found;
-              collision_sign = 0;
-              return true;
-            }
-        }
-      }
+      // collision_sign = Math.sign(collision);
 
-      collision_sign = Math.sign(collision);
+      let change = Math.abs(last_collision-collision)/2.0;
+      last_collision = collision;
+
+      // if(Math.abs(collision) - change < 0.0001){
+      //   console.log(Math.abs(collision) - change);
+      // }
 
       // if(Math.abs(collision.toFixed(5)) < 0.0001){
-      //   let stance_leg =  Utilities.Vector_Utils.subtract(walker.stance_foot, walker.hip),
-      //       swing_leg  =  Utilities.Vector_Utils.subtract(walker.swing_foot, walker.hip);
-      //
-      //   /* If the angle between the legs is sufficiently past parallel */
-      //   let angle = Utilities.Vector_Utils.angleBetween(stance_leg, swing_leg);
-      //   if(angle > 0.4){
-      //     collision_found = true;
-      //     return true;
-      //   }
-      // }
+      if(Math.abs(collision) - change < 0.0001){
+        let stance_leg =  Utilities.Vector_Utils.subtract(walker.stance_foot, walker.hip),
+            swing_leg  =  Utilities.Vector_Utils.subtract(walker.swing_foot, walker.hip);
+
+        /* If the angle between the legs is sufficiently past parallel */
+        let angle = Utilities.Vector_Utils.angleBetween(stance_leg, swing_leg);
+        if(angle > 0.4){
+          collision_found = true;
+          return true;
+        }
+      }
         // console.log([walker.theta, walker.theta_p], [walker.phi, walker.phi_p], collision);
 
       return false;
@@ -143,21 +136,26 @@ let Simple_Walker_2D = (function() {
       /* Check for collision with the ramp. If one occurred,
        * invoke the Poincare map to switch the legs  */
       /* Save the current state */
-      // prev = _.clone(walker);
-      walker.theta   += y_dot[0][0] * dt;
-      walker.theta_p += y_dot[0][1] * dt;
-      walker.phi     += y_dot[1][0] * dt;
-      walker.phi_p   += y_dot[1][1] * dt;
-
-      if(collision_check(walker.theta, walker.phi)){
+      let theta = walker.theta + y_dot[0][0] * dt,
+          phi   = walker.phi + y_dot[1][0] * dt;
+      prev = _.clone(walker);
+      if(collision_check(theta, phi)){
         /* On collision, reverse legs with the Poincare map */
         let shift =  Poincare_map();
 
-        walker.theta = parseFloat(shift[0][0].toPrecision(5));
-        walker.theta_p = parseFloat(shift[0][1].toPrecision(5));
-        walker.phi = parseFloat(shift[1][0].toPrecision(5));
-        walker.phi_p = parseFloat(shift[1][1].toPrecision(5));
+        walker.theta = parseFloat(shift[0][0]);
+        walker.theta_p = parseFloat(shift[0][1]);
+        walker.phi = parseFloat(shift[1][0]);
+        walker.phi_p = parseFloat(shift[1][1]);
       }
+      else{
+        walker.theta   += y_dot[0][0] * dt;
+        walker.theta_p += y_dot[0][1] * dt;
+        walker.phi     += y_dot[1][0] * dt;
+        walker.phi_p   += y_dot[1][1] * dt;
+      }
+
+      console.log([walker.theta, walker.theta_p], [walker.phi, walker.phi_p]);
 
       /* Update model positions */
       update_walker();

@@ -5,7 +5,7 @@ File: simpleWalker2D.js
 Final Project
 */
 "use strict";
-(function(){
+(function () {
   let
     canvas, ctx, animation_then, calculate_then,
     animation_count = 0, slope = 0.01, L = 2.5, multiplier = 40, offset_x = 0, offset_y = 0,
@@ -13,18 +13,18 @@ Final Project
 
   let walker;
 
-  function render_ramp(){
+  function render_ramp() {
     ctx.lineWidth = 3;
     ctx.strokeStyle = "black";
     Utilities.Render_Utils.drawLine(ctx,
-        parseInt(IC.swing_foot[0]*multiplier+offset_x),
-        canvas.height-parseInt(IC.swing_foot[1]*multiplier+offset_y),
-        parseInt(10.25*multiplier+offset_x),
-        canvas.height-parseInt((IC.swing_foot[1]-10.25)*Math.tan(slope)*multiplier+offset_y)
-      );
+      parseInt(IC.swing_foot[0] * multiplier + offset_x),
+      canvas.height - parseInt(IC.swing_foot[1] * multiplier + offset_y),
+      parseInt(10.25 * multiplier + offset_x),
+      canvas.height - parseInt((IC.swing_foot[1] - 10.25) * Math.tan(slope) * multiplier + offset_y)
+    );
   }
 
-  function render(){
+  function render() {
     /* Clear the canvas s*/
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
@@ -32,13 +32,13 @@ Final Project
     render_ramp();
 
     /* Render the walker */
-    walker.render({ctx: ctx, multiplier:multiplier, offset:[offset_x, offset_y], height: canvas.height});
+    walker.render({ctx: ctx, multiplier: multiplier, offset: [offset_x, offset_y], height: canvas.height});
   }
 
   /* based on the request animation example here: http://jsfiddle.net/m1erickson/CtsY3/*/
   function animate(interval) {
     // request another frame
-    requestAnimationFrame(animate.bind(null,interval));
+    requestAnimationFrame(animate.bind(null, interval));
 
     // calculate elapsed time since last loop
     let now = Date.now(),
@@ -51,7 +51,7 @@ Final Project
       animation_then = now - (elapsed % interval);
 
       /* Move the walker forward in the scene */
-      walker.walk(0.05);
+      walker.walk(0.001);
 
       /* Render the scene */
       render();
@@ -59,7 +59,7 @@ Final Project
   }
 
   /* Start animating at a certain fps */
-  function setAnimationIntervals(fps,cb) {
+  function setAnimationIntervals(fps, cb) {
     animation_then = calculate_then = Date.now();
     cb(1000.0 / fps);
   }
@@ -70,10 +70,10 @@ Final Project
     ctx = canvas.getContext("2d");
 
     /* Pixel offset to place walker in the middle */
-    offset_x = canvas.width/4.0;
-    offset_y = canvas.height/2.0;
+    offset_x = canvas.width / 4.0;
+    offset_y = canvas.height / 2.0;
     /* Initialize the walker */
-    walker = new Simple_Walker_2D({gamma:slope, L:L});
+    walker = new Simple_Walker_2D({gamma: slope, L: L});
     IC = walker.initialize();
 
     /* Begin animation */
