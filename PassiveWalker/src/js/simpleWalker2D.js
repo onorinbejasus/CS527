@@ -22,14 +22,16 @@ let Simple_Walker_2D = (function() {
     let Solver = null;
     /* Closure variable to track internal states */
     let walker = {},
-    steps = 0,
-    collision_found = false;
+        steps = 0,
+        collision_found = false,
+        collision_sign = 0;
 
     /* Equations:[theta_p,  =  [ -1   0                    0   0,   x  [theta_m,
     *             theta_pp,       0   cos(2 x theta_m)     0   0,       theta_mp,
     *             phi_p,         -2   0                    0   0,       phi_m,
     *             phi_pp ]        0   cos(theta_pp) x      0   0 ]      phi_mp ]
     *                                   (1-cos(theta_pp)                      */
+
     function passive_motion_ODE(options){
       let theta = options.y0[0][0],
           theta_prime = options.y0[0][1],
@@ -61,26 +63,65 @@ let Simple_Walker_2D = (function() {
     function collision_check(theta, phi) {
 
       let collision = phi.toFixed(5) - (2.0 * theta.toFixed(5));
-      if(Math.abs(collision.toFixed(4)) < 0.0001){
-        collision_found = true;
+      if(collision_sign === 0){
+        collision_sign = Math.sign(collision);
       }
+      else {
+        if(Math.sign(collision) !== collision_sign){
+          let stance_leg =  Utilities.Vector_Utils.subtract(walker.stance_foot, walker.hip),
+              swing_leg  =  Utilities.Vector_Utils.subtract(walker.swing_foot, walker.hip);
+
+          let angle = Utilities.Vector_Utils.angleBetween(stance_leg, swing_leg);
+            if(angle > 0.4){
+              collision_found = !collision_found;
+              collision_sign = 0;
+              return true;
+            }
+        }
+      }
+
+      collision_sign = Math.sign(collision);
+
+      // if(Math.abs(collision.toFixed(5)) < 0.0001){
+      //   let stance_leg =  Utilities.Vector_Utils.subtract(walker.stance_foot, walker.hip),
+      //       swing_leg  =  Utilities.Vector_Utils.subtract(walker.swing_foot, walker.hip);
+      //
+      //   /* If the angle between the legs is sufficiently past parallel */
+      //   let angle = Utilities.Vector_Utils.angleBetween(stance_leg, swing_leg);
+      //   if(angle > 0.4){
+      //     collision_found = true;
+      //     return true;
+      //   }
+      // }
         // console.log([walker.theta, walker.theta_p], [walker.phi, walker.phi_p], collision);
 
-      return (Math.abs(collision.toFixed(4)) < 0.0001);
+      return false;
     }
 
     function update_walker(){
+
+      let stance = (!collision_found) ? walker.stance_foot : walker.swing_foot;
+
       /* Update Hip position */
       walker.hip = [
-        walker.stance_foot[0]-walker.L*Math.sin(walker.theta-gamma),
-        walker.stance_foot[1]+walker.L*Math.cos(walker.theta-gamma)
+        stance[0]-walker.L*Math.sin(walker.theta-gamma),
+        stance[1]+walker.L*Math.cos(walker.theta-gamma)
       ];
 
       /* Update Swing Foot position*/
-      walker.swing_foot = [
-        walker.hip[0]-walker.L*Math.sin(walker.phi-walker.theta+gamma),
-        walker.hip[1]-walker.L*Math.cos(walker.phi-walker.theta+gamma)
-      ];
+      if(!collision_found){
+        walker.swing_foot = [
+          walker.hip[0]-walker.L*Math.sin(walker.phi-walker.theta+gamma),
+          walker.hip[1]-walker.L*Math.cos(walker.phi-walker.theta+gamma)
+        ];
+      }
+      else {
+        walker.stance_foot = [
+          walker.hip[0]-walker.L*Math.sin(walker.phi-walker.theta+gamma),
+          walker.hip[1]-walker.L*Math.cos(walker.phi-walker.theta+gamma)
+        ];
+      }
+
     }
 
     function walk(dt) {

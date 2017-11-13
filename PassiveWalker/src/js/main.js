@@ -51,7 +51,7 @@ Final Project
       animation_then = now - (elapsed % interval);
 
       /* Move the walker forward in the scene */
-      walker.walk(0.01);
+      walker.walk(0.05);
 
       /* Render the scene */
       render();
