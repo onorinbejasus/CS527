@@ -292,8 +292,8 @@ Assignment 3
           /* time step plus a time number to avoid division by 0*/
           dt,
           {
-            numVars:2,
-            dimensions:3,
+            num_vars:2,
+            var_dimensions:3,
             order: 4
           }
         );

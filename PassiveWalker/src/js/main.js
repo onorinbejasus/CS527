@@ -10,6 +10,8 @@ Final Project
     canvas, ctx, animation_then, calculate_then,
     animation_count = 0;
 
+  let walker;
+
   function render(){
     /* Clear the canvas s*/
     ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -33,10 +35,10 @@ Final Project
       animation_then = now - (elapsed % interval);
 
       /* Move the walker forward in the scene */
-      Simple_Walker_2D.walk(elapsed/1e3);
+      walker.walk(0.01);
 
       /* Render the scene */
-      render();
+      //render();
     }
   }
 
@@ -52,10 +54,11 @@ Final Project
     ctx = canvas.getContext("2d");
 
     /* Initialize the walker */
-    Simple_Walker_2D.initialize();
+    walker = new Simple_Walker_2D({gamma: 0.01});
+    walker.initialize();
 
     /* Begin animation */
-    setAnimationIntervals(64, animate);
+    setAnimationIntervals(1000, animate);
   }
 
   /* start the application once the DOM is ready */

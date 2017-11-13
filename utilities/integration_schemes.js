@@ -11,10 +11,13 @@ let DRAG_COEFFICIENT = 0.47, // dimensionless
 
 let Integration = (function(){
 
-  /* Read in the tableau */
-  let tableau;
-  d3.json("../utilities/data/RK_Tableaus.json", function(data) {
-    tableau = data;
+  let tableau = null,
+  data_promise = new Promise(function(resolve, reject){
+    /* Read in the tableau */
+    d3.json("../utilities/data/RK_Tableaus.json", function(data){
+      tableau = data;
+      resolve(tableau);
+    });
   });
 
   return function(options){
@@ -26,9 +29,12 @@ let Integration = (function(){
           add = vector_utils.add,
           divide = vector_utils.divide;
 
-    const RK_A = tableau[options.scheme]["A"],
-          RK_B = tableau[options.scheme]["B"],
-          RK_C = tableau[options.scheme]["C"];
+    let RK_A, RK_B, RK_C;
+    data_promise.then(function(tableau){
+        RK_A = tableau[options.scheme]["A"];
+        RK_B = tableau[options.scheme]["B"];
+        RK_C = tableau[options.scheme]["C"];
+    });
 
     function clearAndAccumulateForces(p, other_forces, dt) {
       /* Clear the previous forces */
@@ -71,14 +77,14 @@ let Integration = (function(){
       /* Intermediate steps: initializes mxn k vector
       * IMPORTANT: This must be a vector so that the matrix multiplications work correctly
       * */
-      let k = Utilities.Matrix_Utils.create(options.numVars*options.dimensions, RK_C.length);
+      let k = Utilities.Matrix_Utils.create(options.num_vars*options.var_dimensions, RK_C.length);
       //[...Array(RK4_C.length)].map(() => Array.from({length:RK4_C.length}, () => [0,0,0] ));
       /* Iterate over and compute the intermediate steps */
       for(let i = 0; i < RK_C.length; i++){
         /* Pre-compute h*A and K*B*/
         let hA  = RK_A[i]*h,
             hB  = vector_utils.multiply(RK_B[i], h),
-            hBk = _.chunk(vector_utils.matrixVectorMultiply(k, hB), options.dimensions);
+            hBk = _.chunk(vector_utils.matrixVectorMultiply(k, hB), options.var_dimensions);
         /* Add the step to the matrix */
         let solution = _.flatten(ODE({y0:add(y0,hBk), dt:h+hA} ));
         for(let ii = 0; ii < solution.length; ii++)
@@ -91,7 +97,7 @@ let Integration = (function(){
       * */
       /* return y prime */
       let output = vector_utils.matrixVectorMultiply(k, RK_C);
-      return _.chunk(output, options.dimensions);
+      return _.chunk(output, options.var_dimensions);
     }
 
     return {
