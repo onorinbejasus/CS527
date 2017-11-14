@@ -27,28 +27,40 @@ let Simple_Walker_2D = (function() {
         last_collision = 0,
         prev = null;
 
-    /* Equations:[theta_p,  =  [ -1   0                    0   0,   x  [theta_m,
-    *             theta_pp,       0   cos(2 x theta_m)     0   0,       theta_mp,
-    *             phi_p,         -2   0                    0   0,       phi_m,
-    *             phi_pp ]        0   cos(theta_pp) x      0   0 ]      phi_mp ]
-    *                                   (1-cos(theta_pp)                      */
+    function passive_motion_ODE45(dydt, y, t){
+      let theta = y[0],
+          theta_prime = y[1],
+          phi = y[2],
+          phi_prime = y[3],
+          theta_m_gamma = theta-gamma;
+      /* Returns [theta_p, theta_pp, phi_p, phi_pp ] */
+        dydt[0] = theta_prime;
+        dydt[1] = Math.sin(theta_m_gamma);
+        dydt[2] = phi_prime;
+        dydt[3] = Math.sin(theta_m_gamma) + Math.sin(phi) *
+          (theta_prime*theta_prime - Math.cos(theta_m_gamma))
+    }
 
     function passive_motion_ODE(options){
       let theta = options.y0[0][0],
           theta_prime = options.y0[0][1],
           phi = options.y0[1][0],
           phi_prime = options.y0[1][1],
-          theta_m_gamma = theta-global_options.gamma;
+          theta_m_gamma = theta-gamma;
       /* Returns [theta_p, theta_pp, phi_p, phi_pp ] */
       return [
         [theta_prime, Math.sin(theta_m_gamma)],
-        [phi_prime, Math.sin(theta_m_gamma) +
-                        Math.sin(phi) *
-                        (theta_prime*theta_prime - Math.cos(theta_m_gamma) )]
+        [phi_prime, Math.sin(theta_m_gamma) + Math.sin(phi) *
+                        (theta_prime*theta_prime - Math.cos(theta_m_gamma)) ]
       ]
     }
 
     /* Transitions from pre collision conditions to post */
+    /* Equations:[theta_p,  =  [ -1   0                    0   0,   x  [theta_m,
+*             theta_pp,       0   cos(2 x theta_m)     0   0,       theta_mp,
+*             phi_p,         -2   0                    0   0,       phi_m,
+*             phi_pp ]        0   cos(theta_pp) x      0   0 ]      phi_mp ]
+*                                   (1-cos(theta_pp)                      */
     function Poincare_map(){
       /* Compute intermediate value */
       let cos2theta = Math.cos(2.0 * walker.theta);
@@ -63,19 +75,13 @@ let Simple_Walker_2D = (function() {
     /* A collision occurs when: phi - 2*theta = 0*/
     function collision_check(theta, phi) {
 
-      let collision = phi.toFixed(5) - (2.0 * theta.toFixed(5));
-
-      // collision_sign = Math.sign(collision);
-
-      let change = Math.abs(last_collision-collision)/2.0;
-      last_collision = collision;
-
-      // if(Math.abs(collision) - change < 0.0001){
-      //   console.log(Math.abs(collision) - change);
-      // }
+      let collision = phi - (2.0 * theta);
 
       // if(Math.abs(collision.toFixed(5)) < 0.0001){
-      if(Math.abs(collision) - change < 0.0001){
+      if( Math.abs(collision.toFixed(4) ) <= 0.0001){
+        /* Update the walker's hip and legs */
+        update_walker(theta, phi);
+
         let stance_leg =  Utilities.Vector_Utils.subtract(walker.stance_foot, walker.hip),
             swing_leg  =  Utilities.Vector_Utils.subtract(walker.swing_foot, walker.hip);
 
@@ -87,31 +93,30 @@ let Simple_Walker_2D = (function() {
         }
       }
         // console.log([walker.theta, walker.theta_p], [walker.phi, walker.phi_p], collision);
-
       return false;
     }
 
-    function update_walker(){
+    function update_walker(theta, phi){
 
       let stance = (!collision_found) ? walker.stance_foot : walker.swing_foot;
 
       /* Update Hip position */
       walker.hip = [
-        stance[0]-walker.L*Math.sin(walker.theta-gamma),
-        stance[1]+walker.L*Math.cos(walker.theta-gamma)
+        stance[0]-walker.L*Math.sin(theta-gamma),
+        stance[1]+walker.L*Math.cos(theta-gamma)
       ];
 
       /* Update Swing Foot position*/
       if(!collision_found){
         walker.swing_foot = [
-          walker.hip[0]-walker.L*Math.sin(walker.phi-walker.theta+gamma),
-          walker.hip[1]-walker.L*Math.cos(walker.phi-walker.theta+gamma)
+          walker.hip[0]-walker.L*Math.sin(phi-theta+gamma),
+          walker.hip[1]-walker.L*Math.cos(phi-theta+gamma)
         ];
       }
       else {
         walker.stance_foot = [
-          walker.hip[0]-walker.L*Math.sin(walker.phi-walker.theta+gamma),
-          walker.hip[1]-walker.L*Math.cos(walker.phi-walker.theta+gamma)
+          walker.hip[0]-walker.L*Math.sin(phi-theta+gamma),
+          walker.hip[1]-walker.L*Math.cos(phi-theta+gamma)
         ];
       }
 
@@ -135,12 +140,21 @@ let Simple_Walker_2D = (function() {
 
       /* Check for collision with the ramp. If one occurred,
        * invoke the Poincare map to switch the legs  */
-      /* Save the current state */
-      let theta = walker.theta + y_dot[0][0] * dt,
-          phi   = walker.phi + y_dot[1][0] * dt;
-      prev = _.clone(walker);
-      if(collision_check(theta, phi)){
+
+      walker.theta   += (y_dot[0][0] * dt);
+      walker.theta   = +(walker.theta.toFixed(4));
+      walker.theta_p += (y_dot[0][1] * dt);
+      walker.theta_p = +(walker.theta_p.toFixed(4));
+      walker.phi     += (y_dot[1][0] * dt);
+      walker.phi     = +(walker.phi.toFixed(4));
+      walker.phi_p   += (y_dot[1][1] * dt);
+      walker.phi_p   = +(walker.phi_p.toFixed(4));
+
+      //prev = _.clone(walker);
+      if(collision_check(walker.theta, walker.phi)){
         /* On collision, reverse legs with the Poincare map */
+        //walker = _.clone(prev);
+
         let shift =  Poincare_map();
 
         walker.theta = parseFloat(shift[0][0]);
@@ -148,14 +162,8 @@ let Simple_Walker_2D = (function() {
         walker.phi = parseFloat(shift[1][0]);
         walker.phi_p = parseFloat(shift[1][1]);
       }
-      else{
-        walker.theta   += y_dot[0][0] * dt;
-        walker.theta_p += y_dot[0][1] * dt;
-        walker.phi     += y_dot[1][0] * dt;
-        walker.phi_p   += y_dot[1][1] * dt;
-      }
 
-      console.log([walker.theta, walker.theta_p], [walker.phi, walker.phi_p]);
+      //console.log([walker.theta, walker.theta_p], [walker.phi, walker.phi_p]);
 
       /* Update model positions */
       update_walker();
@@ -196,7 +204,8 @@ let Simple_Walker_2D = (function() {
         theta   : tgamma3 + theta1*gamma,
         theta_p : alpha * tgamma3 + (alpha*theta1 + c1) * gamma,
         phi     : 2.0 * (tgamma3 + theta1*gamma),
-        phi_p   : tgamma3 + theta1*gamma *(1.0 - Math.cos(2.0 * tgamma3 + theta1*gamma)),
+        phi_p   : (alpha * tgamma3 + (alpha*theta1 + c1) * gamma)
+                    * (1.0 - Math.cos(2.0 * (tgamma3 + theta1*gamma))),
         L:global_options.L,
         stance_foot:[0,0]
       };
@@ -222,6 +231,26 @@ let Simple_Walker_2D = (function() {
       /* Calculate the initial for stable walking based on the papers equations */
       let w = initialize_walker_model();
       walker = _.clone(w);
+
+      let integrator = IntegratorFactory(
+          [walker.theta, walker.theta_p, walker.phi, walker.phi_p],
+          passive_motion_ODE45,
+          0,
+          1e-3,
+          { maxIncreaseFactor: 1,
+            maxDecreaseFactor: 1
+          });
+
+      let tmax = 5, t = [], y = [];
+      while( integrator.step( tmax ) ) {
+        if(collision_check(integrator.y[0], integrator.y[2])){
+          console.log(integrator.y);
+        }
+
+        // Store the solution at this timestep:
+        t.push( _.clone(integrator.t) );
+        y.push( _.clone(integrator.y) );
+      }
 
       return w;
     }
