@@ -23,9 +23,7 @@ let Simple_Walker_2D = (function() {
     /* Closure variable to track internal states */
     let walker = {},
         steps = 0,
-        collision_found = false,
-        last_collision = 0,
-        prev = null;
+        collision_found = false;
 
     function passive_motion_ODE45(dydt, y, t){
       let theta = y[0],
@@ -122,51 +120,20 @@ let Simple_Walker_2D = (function() {
 
     }
 
-    function walk(dt) {
-      /* Integrate */
-      let y_dot = Solver.Runge_Kutta(
-          /* ODE solver function ==> returns the new rotations and velocities */
-          passive_motion_ODE,
-          /* y0 -- Initial y */
-          [ [walker.theta, walker.theta_p], [walker.phi, walker.phi_p]],
-          /* time step plus a time number to avoid division by 0*/
-          dt,
-          {
-            num_vars:2,
-            var_dimensions:2,
-            order: 4
-          }
-      );
+    function walk(time) {
 
-      /* Check for collision with the ramp. If one occurred,
-       * invoke the Poincare map to switch the legs  */
+      let t = [], y = [];
 
-      walker.theta   += (y_dot[0][0] * dt);
-      walker.theta   = +(walker.theta.toFixed(4));
-      walker.theta_p += (y_dot[0][1] * dt);
-      walker.theta_p = +(walker.theta_p.toFixed(4));
-      walker.phi     += (y_dot[1][0] * dt);
-      walker.phi     = +(walker.phi.toFixed(4));
-      walker.phi_p   += (y_dot[1][1] * dt);
-      walker.phi_p   = +(walker.phi_p.toFixed(4));
+      while( Solver.step( time ) ) {
 
-      //prev = _.clone(walker);
-      if(collision_check(walker.theta, walker.phi)){
-        /* On collision, reverse legs with the Poincare map */
-        //walker = _.clone(prev);
+        if(collision_check(Solver.y[0], Solver.y[2])){
+          console.log(Solver.y);
+        }
 
-        let shift =  Poincare_map();
-
-        walker.theta = parseFloat(shift[0][0]);
-        walker.theta_p = parseFloat(shift[0][1]);
-        walker.phi = parseFloat(shift[1][0]);
-        walker.phi_p = parseFloat(shift[1][1]);
+        // Store the solution at this timestep:
+        t.push( _.clone(Solver.t) );
+        y.push( _.clone(Solver.y) );
       }
-
-      //console.log([walker.theta, walker.theta_p], [walker.phi, walker.phi_p]);
-
-      /* Update model positions */
-      update_walker();
 
       steps++;
     }
@@ -232,7 +199,7 @@ let Simple_Walker_2D = (function() {
       let w = initialize_walker_model();
       walker = _.clone(w);
 
-      let integrator = IntegratorFactory(
+      Solver = IntegratorFactory(
           [walker.theta, walker.theta_p, walker.phi, walker.phi_p],
           passive_motion_ODE45,
           0,
@@ -240,17 +207,6 @@ let Simple_Walker_2D = (function() {
           { maxIncreaseFactor: 1,
             maxDecreaseFactor: 1
           });
-
-      let tmax = 5, t = [], y = [];
-      while( integrator.step( tmax ) ) {
-        if(collision_check(integrator.y[0], integrator.y[2])){
-          console.log(integrator.y);
-        }
-
-        // Store the solution at this timestep:
-        t.push( _.clone(integrator.t) );
-        y.push( _.clone(integrator.y) );
-      }
 
       return w;
     }
