@@ -74,6 +74,7 @@ let Simple_Walker_2D = (function() {
         let angle = Utilities.Vector_Utils.angleBetween(stance_leg, swing_leg);
         console.log('collision', collision);
         console.log('angle', angle);
+
         if(angle > 0.4){
           return true;
         }
@@ -116,12 +117,12 @@ let Simple_Walker_2D = (function() {
         /* On collision, apply the Poincare map and update the walker */
         if(collision_check(Solver.y[0], Solver.y[2])) {
           /* Apply the Poincare map and update the solver's value*/
-          Solver.y = Poincare_map(Solver.y);
+          Solver.y = Poincare_map( _.clone(Solver.y) );
           /* Mark that a collision was found */
           collision_found = !collision_found;
         }
 
-        // Store the solution at this timestep:
+        // Store the solution at this time step:
         t.push( Solver.t );
         y.push( _.clone(Solver.y) );
       }

@@ -84,7 +84,7 @@ Final Project
     /* get the initial conditions (ICs) */
     IC = walker.initialize({
       start_time: 0,
-      maxIncreaseFactor: 1,
+      maxIncreaseFactor: 0.5,
       maxDecreaseFactor: 1
     });
 
