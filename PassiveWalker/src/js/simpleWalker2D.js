@@ -135,9 +135,6 @@ let Simple_Walker_2D = (function() {
     }
 
     function render_walker_2D(options) {
-      if(!collision_found && steps % 20 === 0) {
-        update_walker();
-      }
 
       /* Render the stance leg */
       options.ctx.lineWidth = 2;
