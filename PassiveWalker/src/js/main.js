@@ -6,12 +6,14 @@ Final Project
 */
 "use strict";
 (function () {
-  let
-    canvas, ctx, animation_then, calculate_then,
-    animation_count = 0, slope = 0.01, L = 2.5, multiplier = 40, offset_x = 0, offset_y = 0,
-    IC;
 
-  let walker;
+  /*Application variables*/
+  let
+    canvas, ctx, previous_time, calculate_then, total_elapsed = 0,
+    animation_count = 0, interval;
+
+  /* Walker variables */
+  let walker, slope = 0.01, L = 2.5, multiplier = 40, offset_x = 0, offset_y = 0, IC;
 
   function render_ramp() {
     ctx.lineWidth = 3;
@@ -36,32 +38,39 @@ Final Project
   }
 
   /* based on the request animation example here: http://jsfiddle.net/m1erickson/CtsY3/*/
-  function animate(interval) {
-    // request another frame
-    requestAnimationFrame(animate.bind(null, interval));
+  function animate() {
 
     // calculate elapsed time since last loop
     let now = Date.now(),
-      elapsed = now - animation_then;
+      elapsed = now - previous_time + Number.EPSILON;
+      total_elapsed += elapsed;
+      // Get ready for next frame by setting then=now, but...
+      previous_time = now - (elapsed % interval);
 
     // if enough time has elapsed, draw the next frame
     if (elapsed > interval) {
       animation_count++;
-      // Get ready for next frame by setting then=now, but...
-      animation_then = now - (elapsed % interval);
 
       /* Move the walker forward in the scene */
-      walker.walk(0.001);
+      walker.walk(total_elapsed/1e3);
 
       /* Render the scene */
       render();
+
+      // request another frame
+      requestAnimationFrame(animate);
+    }
+    else {
+      // request another frame
+      requestAnimationFrame(animate);
     }
   }
 
   /* Start animating at a certain fps */
   function setAnimationIntervals(fps, cb) {
-    animation_then = calculate_then = Date.now();
-    cb(1000.0 / fps);
+    previous_time = calculate_then = Date.now();
+    interval = 1000.0 / fps;
+    cb();
   }
 
   function initialize() {
@@ -73,11 +82,17 @@ Final Project
     offset_x = canvas.width / 4.0;
     offset_y = canvas.height / 2.0;
     /* Initialize the walker */
-    walker = new Simple_Walker_2D({gamma: slope, L: L});
-    IC = walker.initialize();
+    walker = new Simple_Walker_2D({gamma: slope, L: L, step_size:1e-3});
+
+    /* get the initial conditions (ICs) */
+    IC = walker.initialize({
+      start_time: 0,
+      maxIncreaseFactor: 1,
+      maxDecreaseFactor: 1
+    });
 
     /* Begin animation */
-    setAnimationIntervals(1000, animate);
+    setAnimationIntervals(60, animate);
   }
 
   /* start the application once the DOM is ready */

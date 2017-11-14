@@ -12,12 +12,13 @@ let Simple_Walker_2D = (function() {
 
     /* Initial conditions from the paper, derived from theoretical equations */
     const
-        gamma = global_options.gamma,
-        theta0 = 0.970956,
-        theta1 = -0.270837,
-        alpha   = -1.045203,
-        c1      = 1.062895,
-        tgamma3 = theta0 * Math.pow(global_options.gamma, 1/3);
+        gamma     = global_options.gamma,
+        theta0    = 0.970956,
+        theta1    = -0.270837,
+        alpha     = -1.045203,
+        c1        = 1.062895,
+        tgamma3   = theta0 * Math.pow(global_options.gamma, 1/3),
+        step_size = global_options.step_size;
 
     let Solver = null;
     /* Closure variable to track internal states */
@@ -37,20 +38,6 @@ let Simple_Walker_2D = (function() {
         dydt[2] = phi_prime;
         dydt[3] = Math.sin(theta_m_gamma) + Math.sin(phi) *
           (theta_prime*theta_prime - Math.cos(theta_m_gamma))
-    }
-
-    function passive_motion_ODE(options){
-      let theta = options.y0[0][0],
-          theta_prime = options.y0[0][1],
-          phi = options.y0[1][0],
-          phi_prime = options.y0[1][1],
-          theta_m_gamma = theta-gamma;
-      /* Returns [theta_p, theta_pp, phi_p, phi_pp ] */
-      return [
-        [theta_prime, Math.sin(theta_m_gamma)],
-        [phi_prime, Math.sin(theta_m_gamma) + Math.sin(phi) *
-                        (theta_prime*theta_prime - Math.cos(theta_m_gamma)) ]
-      ]
     }
 
     /* Transitions from pre collision conditions to post */
@@ -85,6 +72,7 @@ let Simple_Walker_2D = (function() {
 
         /* If the angle between the legs is sufficiently past parallel */
         let angle = Utilities.Vector_Utils.angleBetween(stance_leg, swing_leg);
+        console.log('angle', angle);
         if(angle > 0.4){
           collision_found = true;
           return true;
@@ -122,18 +110,32 @@ let Simple_Walker_2D = (function() {
 
     function walk(time) {
 
-      let t = [], y = [];
-
-      while( Solver.step( time ) ) {
+      let t = [], y = [], target_time = time + step_size;
+      // var t0 = performance.now();
+      while( Solver.step(target_time) ) {
 
         if(collision_check(Solver.y[0], Solver.y[2])){
           console.log(Solver.y);
+          /* Break out of the loop */
+          break;
         }
 
         // Store the solution at this timestep:
-        t.push( _.clone(Solver.t) );
+        t.push( Solver.t );
         y.push( _.clone(Solver.y) );
       }
+      // var t1 = performance.now();
+      // console.log("Call to doSomething took " + (t1 - t0) + " milliseconds.");
+      let current = y.slice(-1)[0];
+
+      /* Store the current angles */
+      walker.theta   = current[0];
+      walker.theta_p = current[1];
+      walker.phi     = current[2];
+      walker.phi_p   = current[3];
+
+      /* Update the walker's position */
+      update_walker(walker.theta, walker.phi);
 
       steps++;
     }
@@ -192,9 +194,7 @@ let Simple_Walker_2D = (function() {
       return w;
     }
 
-    function initialize_system() {
-      /* Setup the integrator */
-      Solver = new Integration({scheme:"RK4", constant_forces:[]});
+    function initialize_system(options) {
       /* Calculate the initial for stable walking based on the papers equations */
       let w = initialize_walker_model();
       walker = _.clone(w);
@@ -202,10 +202,11 @@ let Simple_Walker_2D = (function() {
       Solver = IntegratorFactory(
           [walker.theta, walker.theta_p, walker.phi, walker.phi_p],
           passive_motion_ODE45,
-          0,
-          1e-3,
-          { maxIncreaseFactor: 1,
-            maxDecreaseFactor: 1
+          options.start_time,
+          step_size,
+          {
+            maxIncreaseFactor: options.maxIncreaseFactor,
+            maxDecreaseFactor: options.maxDecreaseFactor
           });
 
       return w;
