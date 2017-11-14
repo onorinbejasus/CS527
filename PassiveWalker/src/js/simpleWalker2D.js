@@ -46,14 +46,14 @@ let Simple_Walker_2D = (function() {
 *             phi_p,         -2   0                    0   0,       phi_m,
 *             phi_pp ]        0   cos(theta_pp) x      0   0 ]      phi_mp ]
 *                                   (1-cos(theta_pp)                      */
-    function Poincare_map(){
+    function Poincare_map(y){
+      let theta = y[0], theta_p = y[1];
       /* Compute intermediate value */
-      let cos2theta = Math.cos(2.0 * walker.theta);
+      let cos2theta = Math.cos(2.0 * theta);
       return [
-          [-1.0 * walker.theta,
-          cos2theta * walker.theta_p],
-          [-2.0 * walker.theta,
-          cos2theta * (1.0 - cos2theta) * walker.theta_p]
+        -1.0 * theta,
+        cos2theta * theta_p, -2.0 * theta,
+        cos2theta * (1.0 - cos2theta) * theta_p
       ];
     }
 
@@ -72,13 +72,12 @@ let Simple_Walker_2D = (function() {
 
         /* If the angle between the legs is sufficiently past parallel */
         let angle = Utilities.Vector_Utils.angleBetween(stance_leg, swing_leg);
+        console.log('collision', collision);
         console.log('angle', angle);
         if(angle > 0.4){
-          collision_found = true;
           return true;
         }
       }
-        // console.log([walker.theta, walker.theta_p], [walker.phi, walker.phi_p], collision);
       return false;
     }
 
@@ -114,28 +113,23 @@ let Simple_Walker_2D = (function() {
       // var t0 = performance.now();
       while( Solver.step(target_time) ) {
 
-        if(collision_check(Solver.y[0], Solver.y[2])){
-          console.log(Solver.y);
-          /* Break out of the loop */
-          break;
+        /* On collision, apply the Poincare map and update the walker */
+        if(collision_check(Solver.y[0], Solver.y[2])) {
+          /* Apply the Poincare map and update the solver's value*/
+          Solver.y = Poincare_map(Solver.y);
+          /* Mark that a collision was found */
+          collision_found = !collision_found;
         }
 
         // Store the solution at this timestep:
         t.push( Solver.t );
         y.push( _.clone(Solver.y) );
       }
-      // var t1 = performance.now();
-      // console.log("Call to doSomething took " + (t1 - t0) + " milliseconds.");
+
       let current = y.slice(-1)[0];
 
-      /* Store the current angles */
-      walker.theta   = current[0];
-      walker.theta_p = current[1];
-      walker.phi     = current[2];
-      walker.phi_p   = current[3];
-
       /* Update the walker's position */
-      update_walker(walker.theta, walker.phi);
+      update_walker(current[0], current[2]);
 
       steps++;
     }

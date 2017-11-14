@@ -40,6 +40,9 @@ Final Project
   /* based on the request animation example here: http://jsfiddle.net/m1erickson/CtsY3/*/
   function animate() {
 
+    // request another frame
+    requestAnimationFrame(animate);
+
     // calculate elapsed time since last loop
     let now = Date.now(),
       elapsed = now - previous_time + Number.EPSILON;
@@ -56,14 +59,8 @@ Final Project
 
       /* Render the scene */
       render();
+    }
 
-      // request another frame
-      requestAnimationFrame(animate);
-    }
-    else {
-      // request another frame
-      requestAnimationFrame(animate);
-    }
   }
 
   /* Start animating at a certain fps */
@@ -92,7 +89,7 @@ Final Project
     });
 
     /* Begin animation */
-    setAnimationIntervals(60, animate);
+    setAnimationIntervals(64, animate);
   }
 
   /* start the application once the DOM is ready */
