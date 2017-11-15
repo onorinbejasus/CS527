@@ -13,7 +13,7 @@ Final Project
     animation_count = 0, interval;
 
   /* Walker variables */
-  let walker, slope = 0.01, L = 2.5, multiplier = 40, offset_x = 0, offset_y = 0, IC;
+  let walker, slope = 0.01, L = 2.5, multiplier = 40, offset_x = 0, offset_y = 0, ramp_size, IC;
 
   function render_ramp() {
     ctx.lineWidth = 3;
@@ -21,8 +21,8 @@ Final Project
     Utilities.Render_Utils.drawLine(ctx,
       parseInt(IC.swing_foot[0] * multiplier + offset_x),
       canvas.height - parseInt(IC.swing_foot[1] * multiplier + offset_y),
-      parseInt(10.25 * multiplier + offset_x),
-      canvas.height - parseInt((IC.swing_foot[1] - 10.25) * Math.tan(slope) * multiplier + offset_y)
+      parseInt(ramp_size * multiplier + offset_x),
+      canvas.height - parseInt((IC.swing_foot[1] - ramp_size) * Math.tan(slope) * multiplier + offset_y)
     );
   }
 
@@ -76,8 +76,10 @@ Final Project
     ctx = canvas.getContext("2d");
 
     /* Pixel offset to place walker in the middle */
-    offset_x = canvas.width / 4.0;
+    offset_x = 20;
     offset_y = canvas.height / 2.0;
+    ramp_size = canvas.width;
+
     /* Initialize the walker */
     walker = new Simple_Walker_2D({gamma: slope, L: L, step_size:1e-3});
 
