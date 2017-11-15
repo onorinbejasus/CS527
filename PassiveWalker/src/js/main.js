@@ -45,7 +45,7 @@ Final Project
 
     // calculate elapsed time since last loop
     let now = Date.now(),
-      elapsed = now - previous_time + Number.EPSILON;
+      elapsed = now - previous_time;
       total_elapsed += elapsed;
       // Get ready for next frame by setting then=now, but...
       previous_time = now - (elapsed % interval);
@@ -55,7 +55,7 @@ Final Project
       animation_count++;
 
       /* Move the walker forward in the scene */
-      walker.walk(total_elapsed/1e3);
+      walker.walk(total_elapsed/1e3 + Number.EPSILON);
 
       /* Render the scene */
       render();

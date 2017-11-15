@@ -59,11 +59,10 @@ let Simple_Walker_2D = (function() {
 
     /* A collision occurs when: phi - 2*theta = 0*/
     function collision_check(theta, phi) {
-
       let collision = phi - (2.0 * theta);
 
       // if(Math.abs(collision.toFixed(5)) < 0.0001){
-      if( Math.abs(collision.toFixed(4) ) <= 0.0001){
+      if( Math.abs(collision.toFixed(4) ) <= 0.0002){
         /* Update the walker's hip and legs */
         update_walker(theta, phi);
 
@@ -72,8 +71,6 @@ let Simple_Walker_2D = (function() {
 
         /* If the angle between the legs is sufficiently past parallel */
         let angle = Utilities.Vector_Utils.angleBetween(stance_leg, swing_leg);
-        console.log('collision', collision);
-        console.log('angle', angle);
 
         if(angle > 0.4){
           return true;
@@ -83,7 +80,6 @@ let Simple_Walker_2D = (function() {
     }
 
     function update_walker(theta, phi){
-
       let stance = (!collision_found) ? walker.stance_foot : walker.swing_foot;
 
       /* Update Hip position */
@@ -136,7 +132,6 @@ let Simple_Walker_2D = (function() {
     }
 
     function render_walker_2D(options) {
-
       /* Render the stance leg */
       options.ctx.lineWidth = 2;
       options.ctx.strokeStyle = "black";
