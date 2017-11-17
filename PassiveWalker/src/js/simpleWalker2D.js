@@ -13,10 +13,14 @@ let Simple_Walker_2D = (function() {
     /* Initial conditions from the paper, derived from theoretical equations */
     const
         gamma     = global_options.gamma,
-        theta0    = 0.970956,
-        theta1    = -0.270837,
-        alpha     = -1.045203,
-        c1        = 1.062895,
+        theta0    = //0.943976,
+                    0.970956,
+        theta1    = //-0.264561,
+                    -0.270837,
+        alpha     = //-1.090331,
+                    -1.045203,
+        c1        = //0.866610,
+                    1.062895,
         tgamma3   = theta0 * Math.pow(global_options.gamma, 1/3),
         step_size = global_options.step_size;
 
