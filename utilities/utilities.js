@@ -328,7 +328,7 @@ const Utilities = function(){
         }
       },
 
-      rotateArbAxis(v, axis, angle){
+      rotateArbAxis: function(v, axis, angle){
         let oneMinusCos = 1.0 - Math.cos(angle);
         let xRot = v.x * (Math.cos(angle) + (axis.x*axis.x)*oneMinusCos)
               + v.y * ((axis.x*axis.y)*oneMinusCos - axis.z*Math.sin(angle))
@@ -343,6 +343,11 @@ const Utilities = function(){
           + v.z * (Math.cos(angle) + (axis.z*axis.z)*oneMinusCos);
 
         return {x:xRot, y:yRot, z:zRot};
+      },
+
+      inverse_2x2: function(m){
+        let det = 1.0 / ( (m[0][0]*m[1][1])-(m[0][1]*m[1][0]) );
+        return [[m[0][0]/det, m[0][1]/det],[m[1][0]/det, m[1][1]/det]]
       }
 
     }
