@@ -13,7 +13,7 @@ Final Project
     animation_count = 0, interval;
 
   /* Walker variables */
-  let walker, slope = 0.01, L = 2.5, multiplier = 40, offset_x = 0, offset_y = 0, ramp_size, IC;
+  let walker, slope = -0.1, L = 2.5, multiplier = 40, offset_x = 0, offset_y = 0, ramp_size, IC;
 
   function render_ramp() {
     ctx.lineWidth = 3;
@@ -58,7 +58,8 @@ Final Project
       walker.walk(total_elapsed/1e3 + Number.EPSILON);
 
       /* Render the scene */
-      render();
+      //render();
+
     }
 
   }
@@ -81,7 +82,7 @@ Final Project
     ramp_size = canvas.width;
 
     /* Initialize the walker */
-    walker = new Simple_Walker_2D({gamma: slope, L: L, step_size:1e-3});
+    walker = new Sagittal_Walker_3D({gamma: slope, L: L, step_size:1e-3});
 
     /* get the initial conditions (ICs) */
     IC = walker.initialize({
@@ -91,7 +92,7 @@ Final Project
     });
 
     /* Begin animation */
-    setAnimationIntervals(64, animate);
+    setTimeout(function(){setAnimationIntervals(64, animate)}, 5000);
   }
 
   /* start the application once the DOM is ready */
