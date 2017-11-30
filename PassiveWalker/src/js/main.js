@@ -87,12 +87,15 @@ Final Project
     /* get the initial conditions (ICs) */
     IC = walker.initialize({
       start_time: 0,
-      maxIncreaseFactor: 0.5,
-      maxDecreaseFactor: 1
+      maxIncreaseFactor: 1,
+      maxDecreaseFactor: 1,
+      errorScaleFunction: function( i, dt, y, dydt ) {
+        return 0;
+      }
     });
 
     /* Begin animation */
-    setTimeout(function(){setAnimationIntervals(64, animate)}, 5000);
+    setTimeout(function(){setAnimationIntervals(64, animate)}, 2000);
   }
 
   /* start the application once the DOM is ready */

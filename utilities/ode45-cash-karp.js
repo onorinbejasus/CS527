@@ -100,7 +100,7 @@ var Integrator = function Integrator( y0, deriv, t0, dt0, options ) {
 }
 
 Integrator.prototype._calculateK1 = function() {
-  this.deriv( this._k1, this.y, this.t )
+  this.deriv( this._k1, this.y, this.t, this.dt )
 
   return this
 }
@@ -139,7 +139,7 @@ Integrator.prototype._calculateKs = function(dt) {
         0.2 * this._k1[i] )
   }
 
-  this.deriv( this._k2, this._w, this.t + dt * 0.2 )
+  this.deriv( this._k2, this._w, this.t + dt * 0.2, dt )
 
   for(i=0; i<this.n; i++) {
     this._w[i] = this.y[i] + dt * (
@@ -147,7 +147,7 @@ Integrator.prototype._calculateKs = function(dt) {
         0.225 * this._k2[i] )
   }
 
-  this.deriv( this._k3, this._w, this.t + dt * 0.3 )
+  this.deriv( this._k3, this._w, this.t + dt * 0.3, dt)
 
   for(i=0; i<this.n; i++) {
     this._w[i] = this.y[i] + dt * (
@@ -156,7 +156,7 @@ Integrator.prototype._calculateKs = function(dt) {
         1.2 * this._k3[i] )
   }
 
-  this.deriv( this._k4, this._w, this.t + dt * 0.6 )
+  this.deriv( this._k4, this._w, this.t + dt * 0.6, dt )
 
   for(i=0; i<this.n; i++) {
     this._w[i] = this.y[i] + dt * (
@@ -166,7 +166,7 @@ Integrator.prototype._calculateKs = function(dt) {
         1.296296296296296296 * this._k4[i] )
   }
 
-  this.deriv( this._k5, this._w, this.t + dt /* * b5 */ )
+  this.deriv( this._k5, this._w, this.t + dt, dt /* * b5 */ )
 
   for(i=0; i<this.n; i++) {
     this._w[i] = this.y[i] + dt * (
@@ -177,7 +177,7 @@ Integrator.prototype._calculateKs = function(dt) {
         0.061767578125       * this._k5[i] )
   }
 
-  this.deriv( this._k6, this._w, this.t + dt * 0.875 )
+  this.deriv( this._k6, this._w, this.t + dt * 0.875, dt )
 
   return this
 }

@@ -26,9 +26,11 @@ let Sagittal_Walker_3D = (function() {
     /* Closure variable to track internal states */
     let walker = {},
         steps = 0,
-        collision_found = false;
+        collision_found = false,
+        last_collision_t = 0,
+        step_period = 350;
 
-    function passive_motion_ODE45(dydt, y, t){
+    function passive_motion_ODE45(dydt, y, t, dt){
       let theta_st = y[0],   theta_sw = y[1],
           theta_st_p = y[2], theta_sw_p = y[3],
           theta_p = math.matrix([theta_st_p, theta_sw_p]);
@@ -62,10 +64,10 @@ let Sagittal_Walker_3D = (function() {
           theta_dp = math.multiply(H_inv, minus_g);
 
       /* set the output */
-      dydt[0] = theta_st_p;
-      dydt[1] = theta_sw_p;
-      dydt[2] = theta_dp._data[0];
-      dydt[3] = theta_dp._data[1];
+      dydt[0] = theta_st_p * step_size; dydt[0] = +dydt[0].toFixed(5);
+      dydt[1] = theta_sw_p* step_size; dydt[1] = +dydt[1].toFixed(5);
+      dydt[2] = theta_dp._data[0]* step_size; dydt[2] = +dydt[2].toFixed(5);
+      dydt[3] = theta_dp._data[1]* step_size; dydt[3] = +dydt[3].toFixed(5);
     }
 
     /* Transitions from pre collision conditions to post */
@@ -105,26 +107,31 @@ let Sagittal_Walker_3D = (function() {
     function walk(time) {
 
       let t = [], y = [], target_time = time + step_size;
-      Solver.step(target_time);
-      console.log(Solver);
-      // var t0 = performance.now();
-      // while( Solver.step(target_time) ) {
-      //
-      //   // /* On collision, apply the Poincare map and update the walker */
-      //   // if(collision_check(Solver.y[0], Solver.y[2])) {
-      //   //   /* Apply the Poincare map and update the solver's value*/
-      //   //   Solver.y = Poincare_map( _.clone(Solver.y) );
-      //   //   /* Mark that a collision was found */
-      //   //   collision_found = !collision_found;
-      //   // }
-      //
-      //   // Store the solution at this time step:
-      //   t.push( Solver.t );
-      //   y.push( _.clone(Solver.y) );
-      // }
+      // Solver.step(target_time);
+      // console.log(Solver);
+      // Solver.steps(target_time);
+      while( Solver.step(target_time) ) {
 
-//      let current = y.slice(-1)[0];
+        // /* On collision, apply the Poincare map and update the walker */
+        // if(collision_check(Solver.y[0], Solver.y[2])) {
+        //   /* Apply the Poincare map and update the solver's value*/
+        //   Solver.y = Poincare_map( _.clone(Solver.y) );
+        //   /* Mark that a collision was found */
+        //   collision_found = !collision_found;
+        // }
 
+        if(t - last_collision_t > step_period){
+          last_collision_t = Solver.t;
+          console.log(Solver.y);
+        }
+
+        // Store the solution at this time step:
+        t.push( Solver.t );
+        y.push( _.clone(Solver.y) );
+      }
+
+      let current = y.slice(-1)[0];
+      console.log(current[0], current[1], current[2], current[3]);
       /* Update the walker's position */
       //update_walker(current[0], current[2]);
 
