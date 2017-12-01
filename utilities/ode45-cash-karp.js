@@ -209,7 +209,6 @@ Integrator.prototype._calculateError = function(dt) {
         ) / this._errorScale[i]
     )
   }
-
   return this.errorPostFunction(error)
 }
 
@@ -283,7 +282,6 @@ Integrator.prototype.step = function( tLimit ) {
 
     // Calculate the max error of the proposed step:
     error = this._calculateError(thisDt)
-
     if( error < this.tol || lowerDtLimitReached ) {
       // Success! Exit:
       break

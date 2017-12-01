@@ -28,7 +28,7 @@ let Sagittal_Walker_3D = (function() {
         steps = 0,
         collision_found = false,
         last_collision_t = 0,
-        step_period = 350;
+        step_period = 0.035;
 
     function passive_motion_ODE45(dydt, y, t, dt){
       let theta_st = y[0],   theta_sw = y[1],
@@ -64,10 +64,15 @@ let Sagittal_Walker_3D = (function() {
           theta_dp = math.multiply(H_inv, minus_g);
 
       /* set the output */
-      dydt[0] = theta_st_p * step_size; dydt[0] = +dydt[0].toFixed(5);
-      dydt[1] = theta_sw_p* step_size; dydt[1] = +dydt[1].toFixed(5);
-      dydt[2] = theta_dp._data[0]* step_size; dydt[2] = +dydt[2].toFixed(5);
-      dydt[3] = theta_dp._data[1]* step_size; dydt[3] = +dydt[3].toFixed(5);
+      // dydt[0] = theta_st_p * step_size; dydt[0] = +dydt[0].toFixed(5);
+      // dydt[1] = theta_sw_p* step_size; dydt[1] = +dydt[1].toFixed(5);
+      // dydt[2] = theta_dp._data[0]* step_size; dydt[2] = +dydt[2].toFixed(5);
+      // dydt[3] = theta_dp._data[1]* step_size; dydt[3] = +dydt[3].toFixed(5);
+
+      dydt[0] = theta_st_p * 1; dydt[0] = +dydt[0].toFixed(5);
+      dydt[1] = theta_sw_p* 1; dydt[1] = +dydt[1].toFixed(5);
+      dydt[2] = theta_dp._data[0]* 1; dydt[2] = +dydt[2].toFixed(5);
+      dydt[3] = theta_dp._data[1]* 1; dydt[3] = +dydt[3].toFixed(5);
     }
 
     /* Transitions from pre collision conditions to post */
@@ -120,7 +125,7 @@ let Sagittal_Walker_3D = (function() {
         //   collision_found = !collision_found;
         // }
 
-        if(t - last_collision_t > step_period){
+        if(Solver.t - last_collision_t > step_period){
           last_collision_t = Solver.t;
           console.log(Solver.y);
         }
@@ -131,7 +136,9 @@ let Sagittal_Walker_3D = (function() {
       }
 
       let current = y.slice(-1)[0];
+      console.log(t.slice(-1)[0]);
       console.log(current[0], current[1], current[2], current[3]);
+
       /* Update the walker's position */
       //update_walker(current[0], current[2]);
 
@@ -165,7 +172,13 @@ let Sagittal_Walker_3D = (function() {
           step_size,
           {
             maxIncreaseFactor: options.maxIncreaseFactor,
-            maxDecreaseFactor: options.maxDecreaseFactor
+            maxDecreaseFactor: options.maxDecreaseFactor,
+            tol: 1e-6,
+            errorScaleFunction: function( i, dt, y, dydt ) {
+              let scale = Math.abs(y) + Math.abs(dt * dydt);
+              scale += (scale === 0) ? 1e32 : 1e-32;
+              return scale;
+            }
           });
 
       //return w;
