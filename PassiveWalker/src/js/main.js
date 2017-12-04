@@ -13,7 +13,7 @@ var App = App || {};
   /*Application variables*/
   let
     canvas, ctx, previous_time, calculate_then, total_elapsed = 0,
-    animation_count = 0, interval;
+    animation_count = 0, interval, controls;
 
   /* Walker variables */
   let walker, slope = -0.1, L = 2.5, multiplier = 40, offset_x = 0, offset_y = 0, ramp_size, IC;
