@@ -5,6 +5,9 @@ File: simpleWalker2D.js
 Final Project
 */
 "use strict";
+
+var App = App || {};
+
 (function () {
 
   /*Application variables*/
@@ -39,16 +42,15 @@ Final Project
 
   /* based on the request animation example here: http://jsfiddle.net/m1erickson/CtsY3/*/
   function animate() {
-
     // request another frame
     requestAnimationFrame(animate);
 
     // calculate elapsed time since last loop
     let now = Date.now(),
-      elapsed = now - previous_time;
-      total_elapsed += elapsed;
-      // Get ready for next frame by setting then=now, but...
-      previous_time = now - (elapsed % interval);
+        elapsed = now - previous_time;
+    total_elapsed += elapsed;
+    // Get ready for next frame by setting then=now, but...
+    previous_time = now - (elapsed % interval);
 
     // if enough time has elapsed, draw the next frame
     if (elapsed > interval) {
@@ -59,7 +61,6 @@ Final Project
 
       /* Render the scene */
       //render();
-
     }
 
   }
@@ -75,6 +76,8 @@ Final Project
     /* Setup the canvas */
     canvas = document.getElementById("canvas");
     ctx = canvas.getContext("2d");
+
+    App.render = true;
 
     /* Pixel offset to place walker in the middle */
     offset_x = 20;

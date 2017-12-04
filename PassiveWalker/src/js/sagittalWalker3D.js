@@ -6,6 +6,8 @@ Final Project
 */
 "use strict";
 
+var App = App || {};
+
 let Sagittal_Walker_3D = (function() {
 
   return function(global_options) {
@@ -22,6 +24,9 @@ let Sagittal_Walker_3D = (function() {
         phi       = 0.23, // angle between the axel center and foot
         step_size = global_options.step_size;
 
+    let internal_time = 0,
+        dydt = [0.0, 0.0, 0.0, 0.0];
+
     let Solver = null;
     /* Closure variable to track internal states */
     let walker = {},
@@ -30,7 +35,8 @@ let Sagittal_Walker_3D = (function() {
         last_collision_t = 0,
         step_period = 0.035;
 
-    function passive_motion_ODE45(dydt, y, t, dt){
+    function passive_motion_ODE45(y){
+      let solution = y;
       let theta_st = y[0],   theta_sw = y[1],
           theta_st_p = y[2], theta_sw_p = y[3],
           theta_p = math.matrix([theta_st_p, theta_sw_p]);
@@ -64,15 +70,17 @@ let Sagittal_Walker_3D = (function() {
           theta_dp = math.multiply(H_inv, minus_g);
 
       /* set the output */
-      // dydt[0] = theta_st_p * step_size; dydt[0] = +dydt[0].toFixed(5);
-      // dydt[1] = theta_sw_p* step_size; dydt[1] = +dydt[1].toFixed(5);
-      // dydt[2] = theta_dp._data[0]* step_size; dydt[2] = +dydt[2].toFixed(5);
-      // dydt[3] = theta_dp._data[1]* step_size; dydt[3] = +dydt[3].toFixed(5);
+      solution[0] = y[0] + theta_st_p * step_size;
+      solution[1] = y[1] + theta_sw_p* step_size;
+      solution[2] = y[2] + theta_dp._data[0]* step_size;
+      solution[3] = y[3] + theta_dp._data[1]* step_size;
 
-      dydt[0] = theta_st_p * 1; dydt[0] = +dydt[0].toFixed(5);
-      dydt[1] = theta_sw_p* 1; dydt[1] = +dydt[1].toFixed(5);
-      dydt[2] = theta_dp._data[0]* 1; dydt[2] = +dydt[2].toFixed(5);
-      dydt[3] = theta_dp._data[1]* 1; dydt[3] = +dydt[3].toFixed(5);
+      return solution;
+
+      // dydt[0] = theta_st_p * 1; dydt[0] = +dydt[0].toFixed(5);
+      // dydt[1] = theta_sw_p* 1; dydt[1] = +dydt[1].toFixed(5);
+      // dydt[2] = theta_dp._data[0]* 1; dydt[2] = +dydt[2].toFixed(5);
+      // dydt[3] = theta_dp._data[1]* 1; dydt[3] = +dydt[3].toFixed(5);
     }
 
     /* Transitions from pre collision conditions to post */
@@ -86,22 +94,12 @@ let Sagittal_Walker_3D = (function() {
 
     /* A collision occurs when: phi - 2*theta = 0*/
     function collision_check(theta, phi) {
-      let collision = phi - (2.0 * theta);
+      let collision = Math.abs(phi) - Math.abs(2.0 * theta);
 
-      // if(Math.abs(collision.toFixed(5)) < 0.0001){
-      if( Math.abs(collision.toFixed(4) ) <= 0.0002){
-        /* Update the walker's hip and legs */
-        update_walker(theta, phi);
+      console.log(theta, phi, collision);
 
-        let stance_leg =  Utilities.Vector_Utils.subtract(walker.stance_foot, walker.hip),
-            swing_leg  =  Utilities.Vector_Utils.subtract(walker.swing_foot, walker.hip);
-
-        /* If the angle between the legs is sufficiently past parallel */
-        let angle = Utilities.Vector_Utils.angleBetween(stance_leg, swing_leg);
-
-        if(angle > 0.4){
-          return true;
-        }
+      if(Math.abs(+collision.toFixed(5)) === 0) {
+        return true;
       }
       return false;
     }
@@ -112,37 +110,41 @@ let Sagittal_Walker_3D = (function() {
     function walk(time) {
 
       let t = [], y = [], target_time = time + step_size;
-      // Solver.step(target_time);
-      // console.log(Solver);
-      // Solver.steps(target_time);
-      while( Solver.step(target_time) ) {
 
-        // /* On collision, apply the Poincare map and update the walker */
-        // if(collision_check(Solver.y[0], Solver.y[2])) {
-        //   /* Apply the Poincare map and update the solver's value*/
-        //   Solver.y = Poincare_map( _.clone(Solver.y) );
-        //   /* Mark that a collision was found */
-        //   collision_found = !collision_found;
-        // }
+      console.log(time);
 
-        if(Solver.t - last_collision_t > step_period){
-          last_collision_t = Solver.t;
-          console.log(Solver.y);
+      while( internal_time <= target_time ) {
+
+        dydt = passive_motion_ODE45(dydt);
+
+        y.push(_.clone(dydt));
+
+        console.log(internal_time);
+
+        /* On collision, apply the Poincare map and update the walker */
+        if( Math.abs(+dydt[0].toFixed(3)) > 0 && collision_check(dydt[0], dydt[1])) {
+          /* Apply the Poincare map and update the solver's value*/
+          //Solver.y = Poincare_map( _.clone(Solver.y) );
+          /* Mark that a collision was found */
+          collision_found = !collision_found;
         }
 
-        // Store the solution at this time step:
-        t.push( Solver.t );
-        y.push( _.clone(Solver.y) );
+
+        internal_time += step_size;
+        steps++;
+
+        // // Store the solution at this time step:
+        // t.push( Solver.t );
+        // y.push( _.clone(Solver.y) );
       }
 
-      let current = y.slice(-1)[0];
-      console.log(t.slice(-1)[0]);
-      console.log(current[0], current[1], current[2], current[3]);
+      // let current = y.slice(-1)[0];
+      // console.log(t.slice(-1)[0]);
+      // console.log(current[0], current[1], current[2], current[3]);
 
       /* Update the walker's position */
       //update_walker(current[0], current[2]);
 
-      steps++;
     }
 
     function render_walker_3D(options) {
@@ -161,25 +163,27 @@ let Sagittal_Walker_3D = (function() {
     }
 
     function initialize_system(options) {
-      /* Calculate the initial for stable walking based on the papers equations */
-      // let w = initialize_walker_model();
-      // walker = _.clone(w);
-
-      Solver = IntegratorFactory(
-          [0.0, 0.0, 0.0, 0.0],
-          passive_motion_ODE45,
-          options.start_time,
-          step_size,
-          {
-            maxIncreaseFactor: options.maxIncreaseFactor,
-            maxDecreaseFactor: options.maxDecreaseFactor,
-            tol: 1e-6,
-            errorScaleFunction: function( i, dt, y, dydt ) {
-              let scale = Math.abs(y) + Math.abs(dt * dydt);
-              scale += (scale === 0) ? 1e32 : 1e-32;
-              return scale;
-            }
-          });
+    //   /* Calculate the initial for stable walking based on the papers equations */
+    //   // let w = initialize_walker_model();
+    //   // walker = _.clone(w);
+    //
+    //   Solver = IntegratorFactory(
+    //       [0.0, 0.0, 0.0, 0.0],
+    //       passive_motion_ODE45,
+    //       options.start_time,
+    //       step_size,
+    //       {
+    //         maxIncreaseFactor: options.maxIncreaseFactor,
+    //         maxDecreaseFactor: options.maxDecreaseFactor,
+    //         tol: 1e-5,
+    //         dtMaxMag: 1e-3,
+    //         dtMinMag: 1e-3,
+    //         errorScaleFunction: function( i, dt, y, dydt ) {
+    //           let scale = Math.abs(y) + Math.abs(dt * dydt);
+    //           scale += (scale === 0) ? 1e32 : 1e-32;
+    //           return scale;
+    //         }
+    //       });
 
       //return w;
     }
