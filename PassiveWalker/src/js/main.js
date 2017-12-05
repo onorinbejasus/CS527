@@ -13,7 +13,7 @@ var App = App || {};
   /*Application variables*/
   let previous_time, calculate_then, total_elapsed = 0,
     animation_count = 0, interval, controls;
-  let container, stats, camera, scene, renderer;
+  let container, stats, camera,renderer;
 
   /* Walker variables */
   let walker, slope = -0.1, IC;
@@ -23,7 +23,7 @@ var App = App || {};
   }
 
   function render() {
-    renderer.render( scene, camera );
+    renderer.render( App.scene, camera );
   }
 
   /* based on the request animation example here: http://jsfiddle.net/m1erickson/CtsY3/*/
@@ -42,10 +42,10 @@ var App = App || {};
     if (elapsed > interval) {
       animation_count++;
 
-      /* Move the walker forward in the scene */
+      /* Move the walker forward in the App.scene */
       //walker.walk(total_elapsed/1e3 + Number.EPSILON);
 
-      /* Render the scene */
+      /* Render the App.scene */
       render();
     }
 
@@ -65,13 +65,13 @@ var App = App || {};
     /* Create the camera and set it's position */
     camera = new THREE.PerspectiveCamera( 27, window.innerWidth / window.innerHeight, 5, 3500 );
     camera.position.z = 100;
-    /* Create the scene */
-    scene = new THREE.Scene();
-    scene.background = new THREE.Color( 0x050505 );
+    /* Create the App.scene */
+    App.scene = new THREE.Scene();
+    App.scene.background = new THREE.Color( 0x050505 );
     /* Add the axis helper*/
-    scene.add( new THREE.AxisHelper() );
+    App.scene.add( new THREE.AxisHelper() );
     /* Add lighting */
-    scene.add( new THREE.AmbientLight( 0xffffff ) );
+    App.scene.add( new THREE.AmbientLight( 0xffffff ) );
     camera.add( new THREE.PointLight( 0xffffff, 1 ) );
     /* Set the mouse controls */
     controls = new THREE.OrbitControls( camera );
@@ -86,7 +86,7 @@ var App = App || {};
       start_time: 0,
       maxIncreaseFactor: 2,
       maxDecreaseFactor: 4
-    }, scene);
+    }, App.scene);
 
     renderer = new THREE.WebGLRenderer( { antialias: true } );
     renderer.setPixelRatio( window.devicePixelRatio );

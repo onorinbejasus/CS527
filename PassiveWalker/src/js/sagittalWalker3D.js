@@ -196,6 +196,8 @@ let Sagittal_Walker_3D = (function() {
       swing_group.add(sw_foot);
 
       /*Add the legs to a group */
+      swing_group.name = "swing_leg";
+      stance_group.name = "stance_leg";
       legs_groups.add(swing_group);
       legs_groups.add(stance_group);
 
