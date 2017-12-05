@@ -37,6 +37,10 @@ let Sagittal_Walker_3D = (function() {
         last_collision_t = 0,
         step_period = -1;
 
+    function rotate(angle) {
+      return [[Math.cos(angle), -Math.sin(angle)], [Math.sin(angle), Math.cos(angle)]];
+    }
+
     function createConvex(positions, color, rot, trans){
       let group = new THREE.Group();
       let geometry = new THREE.ConvexBufferGeometry(positions);
@@ -82,8 +86,51 @@ let Sagittal_Walker_3D = (function() {
       return group;
     }
 
+    function create_body(angular_disp) {
+
+      let group = new THREE.Group();
+      let theta_rot = rotate(angular_disp[0]), phi_rot = rotate(angular_disp[1]);
+      let st_alpha   = Math.max(Math.min(angular_disp[0]-gamma,phi),-phi),
+          sw_alpha = Math.max(Math.min(angular_disp[1]-gamma,phi),-phi),
+          gc = math.multiply(rotate(gamma),[[-Rs*st_alpha],[0]]),
+          center = math.add(gc,math.multiply(rotate(angular_disp[0]-sw_alpha), [[0],[Rs]])),
+          hip = math.subtract(center, math.multiply(theta_rot, [[0],[d]])),
+          sw_center = math.add(hip, math.multiply(phi_rot, [[0],[d]])),
+          sw_gc = math.add(sw_center, math.multiply(rotate(angular_disp[1]-sw_alpha), [[0],[-Rs]]));
+
+      let axel_points = [], ankle_position = [0.0, -11.5];
+      for(let i = 0; i < 2.0*Math.PI; i+=0.1){
+        axel_points.push([0.25*Math.sin(i)+hip[0][0], 0.25*Math.cos(i)+hip[1][0]]);
+      }
+
+      let leg = [
+          [-0.625,0.75], [0.625,0.75], [0.625,ankle_position[1]], [-0.625,ankle_position[1]],[-0.625,0.75]
+      ];
+
+      /* Construct the two legs */
+      let swing_leg = [], stance_leg = [];
+      hip = [hip[0][0],hip[1][0]];
+      for(let i = 0; i < leg.length; i++) {
+        swing_leg.push(math.add(hip,math.multiply(theta_rot,leg[i])));
+        stance_leg.push(math.add(hip,math.multiply(phi_rot,leg[i])));
+      }
+      // get the ankle positions
+      let st_ankle = math.add(hip,math.multiply(theta_rot,ankle_position));
+      let sw_ankle = math.add(hip,math.multiply(phi_rot,ankle_position));
+
+      /* Construct the foot of the walker */
+      let st_foot = create_foot(ankle_position, 30, 3);
+      let sw_foot = create_foot(ankle_position, 30, -3);
+
+      group.add(st_foot);
+      group.add(sw_foot);
+
+      return group;
+    }
+
+
     /* Function to create the rocking foot model */
-    function create_foot(ankle, num_points) {
+    function create_foot(ankle, num_points, z_off) {
       /* To calculate Z-position */
       let compute_z = function(x,y){return Math.sqrt(Rf*Rf-x*x) - Rf + Math.sqrt(Rs*Rs-y*y) - Rs;};
       /* Center of the foot */
@@ -96,7 +143,6 @@ let Sagittal_Walker_3D = (function() {
       for(let i = 0; i < num_points; i++){
         let theta = -phi + (2.0*phi/num_points) * i;
             theta = +theta.toFixed(4);
-            console.log(theta);
         /* The last point occurs at phi */
         if(theta === phi) break;
         let x =  Rs * Math.sin(theta) + center[0],
@@ -115,7 +161,7 @@ let Sagittal_Walker_3D = (function() {
         result.addVectors(points[j],offset);
         points.push(_.clone(result));
       }
-      return createConvex(points, "#ffffff")
+      return createConvex(points, "#ffffff",[],[0,0,z_off])
     }
 
     function passive_motion_ODE45(y){
@@ -289,11 +335,9 @@ let Sagittal_Walker_3D = (function() {
 
     function initialize_walker_model(scene){
 
-      let ankle_position = [0.0, -11.5];
-      /* Construct the foot of the walker */
-      let foot_mesh = create_foot(ankle_position, 20);
+      let hip = create_body([Math.asin(3.5/Rf),0]);
 
-      scene.add(foot_mesh);
+      scene.add(hip);
     }
 
     function initialize_system(options, scene) {
