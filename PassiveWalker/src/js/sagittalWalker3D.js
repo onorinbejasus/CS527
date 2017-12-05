@@ -91,7 +91,6 @@ let Sagittal_Walker_3D = (function() {
 
     /* Function to create the rocking foot model */
     function create_foot(ankle, num_points, z_off) {
-
       /* Center of the foot */
       let center = [-ankle[0], -ankle[1]+ d ];
       /* Min/Max X point */
@@ -137,12 +136,8 @@ let Sagittal_Walker_3D = (function() {
       /* Construct the two legs */
       let points = [];
       for(let i = 0; i < leg.length; i++) {
-        let swP = math.add(hip,leg[i]),
-            stP = math.add(hip,leg[i]);
-
+        let swP = math.add(hip,leg[i]);
         let swX = swP[0], swY = swP[1], swZ = swP[2];
-        let stX = swP[0], stY = swP[1], stZ = stP[2];
-
         points.push([swX,swY,swZ]);
       }
 
@@ -206,6 +201,25 @@ let Sagittal_Walker_3D = (function() {
       return legs_groups;
     }
 
+    function create_axel(hip,r,feet_dist,ankle) {
+      let axel_points = [];
+      for(let i = 0; i < 2.0*Math.PI; i+=0.1){
+        axel_points.push([r*Math.sin(i)+hip[0][0], r*Math.cos(i)+hip[1][0]]);
+      }
+
+      let material = new THREE.MeshLambertMaterial( {
+        color: "#0000ff",
+        opacity: 0.5,
+        transparent: true
+      } );
+      let axel_geometry = new THREE.CylinderGeometry( r, r, feet_dist, 32 ),
+          axel_mesh = new THREE.Mesh( axel_geometry, material );
+      axel_mesh.translateY(-ankle[1]);
+      axel_mesh.rotateX(90.0*0.0174533);
+
+      return axel_mesh;
+    }
+
     function create_body(angular_disp) {
 
       let group = new THREE.Group();
@@ -218,19 +232,19 @@ let Sagittal_Walker_3D = (function() {
           sw_center = math.add(hip, math.multiply(phi_rot, [[0],[d]])),
           sw_gc = math.add(sw_center, math.multiply(rotate(angular_disp[1]-sw_alpha), [[0],[-Rs]]));
 
-      let axel_points = [], ankle_position = [0.0, -11.5];
-      for(let i = 0; i < 2.0*Math.PI; i+=0.1){
-        axel_points.push([0.25*Math.sin(i)+hip[0][0], 0.25*Math.cos(i)+hip[1][0]]);
-      }
+      let ankle_position = [0.0,-11.5], feet_distance = 6;
 
+      /* Create the axel that connects the legs */
+      let axel = create_axel(hip,0.25,feet_distance,ankle_position);
+      group.add(axel);
+
+      /* Create the legs and feet */
       hip = [hip[0][0],hip[1][0],hip[0][0]/2];
-      let legs = create_legs(ankle_position,hip, 6);
+      let legs = create_legs(ankle_position,hip, feet_distance);
       group.add(legs);
 
       return group;
     }
-
-
 
 
     function passive_motion_ODE45(y){
