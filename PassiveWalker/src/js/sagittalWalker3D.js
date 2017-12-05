@@ -49,8 +49,8 @@ let Sagittal_Walker_3D = (function() {
       let geometry = new THREE.ConvexBufferGeometry(positions);
       let material = new THREE.MeshLambertMaterial( {
         color: color,
-        opacity: 0.5,
-        transparent: true
+        opacity: 1,
+        transparent: false
       } );
       let mesh1 = new THREE.Mesh( geometry, material );
 
@@ -150,14 +150,15 @@ let Sagittal_Walker_3D = (function() {
 
       let material = new THREE.MeshLambertMaterial( {
         color: "#00ff00",
-        opacity: 0.5,
-        transparent: true
+        opacity: 1.0,
+        transparent: false
       } ),
 
       chamber_geometry = new THREE.BoxGeometry( width_chamber, height_chamber, depth_chamber ),
-      chamber_mesh = new THREE.Mesh( chamber_geometry, material ),
+      chamber_mesh = new THREE.Mesh( chamber_geometry, material );
+      chamber_mesh.material.side = THREE.DoubleSide;
 
-      swing_geometry = new THREE.BoxGeometry( width_leg, height_leg, depth_leg ),
+      let swing_geometry = new THREE.BoxGeometry( width_leg, height_leg, depth_leg ),
       swing_mesh = new THREE.Mesh( swing_geometry, material ),
 
       stance_geometry = new THREE.BoxGeometry( width_leg, height_leg, depth_leg ),
@@ -209,8 +210,8 @@ let Sagittal_Walker_3D = (function() {
 
       let material = new THREE.MeshLambertMaterial( {
         color: "#0000ff",
-        opacity: 0.5,
-        transparent: true
+        opacity: 1.0,
+        transparent: false
       } );
       let axel_geometry = new THREE.CylinderGeometry( r, r, feet_dist, 32 ),
           axel_mesh = new THREE.Mesh( axel_geometry, material );
@@ -245,7 +246,6 @@ let Sagittal_Walker_3D = (function() {
 
       return group;
     }
-
 
     function passive_motion_ODE45(y){
       let solution = y;
@@ -407,14 +407,6 @@ let Sagittal_Walker_3D = (function() {
 
     }
 
-    function render_walker_3D(options) {
-      /* Render the stance leg */
-
-
-      /* Render the swing leg*/
-
-
-    }
 
     function initialize_walker_model(scene){
 
@@ -432,7 +424,6 @@ let Sagittal_Walker_3D = (function() {
     return {
       initialize: initialize_system,
       walk: walk,
-      render: render_walker_3D
     }
   }
 })();
