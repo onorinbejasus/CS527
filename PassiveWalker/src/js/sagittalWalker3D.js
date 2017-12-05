@@ -17,12 +17,14 @@ let Sagittal_Walker_3D = (function() {
         gamma     = global_options.gamma || 0.1,
         m         = 2.795,
         I         = 17.5,
-        R         = global_options.R || 14.8,
-        d         = R-12.94,
-        b         = R-8,
+        Rs         = global_options.Rs || 14.8,
+        Rf         = global_options.Rf || 19.6,
+        d         = Rs-12.94,
+        b         = Rs-8,
         g         = 386.088,
         phi       = 0.23, // angle between the axel center and foot
-        step_size = global_options.step_size;
+        step_size = global_options.step_size,
+        Vec3 = THREE.Vector3;
 
     let internal_time = 0,
         dydt = [0.0, 0.0, 0.0, 0.0];
@@ -35,6 +37,87 @@ let Sagittal_Walker_3D = (function() {
         last_collision_t = 0,
         step_period = -1;
 
+    function createConvex(positions, color, rot, trans){
+      let group = new THREE.Group();
+      let geometry = new THREE.ConvexBufferGeometry(positions);
+      let material = new THREE.MeshLambertMaterial( {
+        color: color,
+        opacity: 0.5,
+        transparent: true
+      } );
+      let mesh1 = new THREE.Mesh( geometry, material );
+
+      if(rot && rot.length > 0){
+        mesh1.rotateX(rot[0]);
+        mesh1.rotateY(rot[1]);
+        mesh1.rotateZ(rot[2]);
+      }
+
+      if(trans && trans.length > 0){
+        mesh1.translateX(trans[0]);
+        mesh1.translateY(trans[1]);
+        mesh1.translateZ(trans[2]);
+      }
+
+      mesh1.material.side = THREE.BackSide; // back faces
+      mesh1.renderOrder = 0;
+      group.add(mesh1);
+
+      let mesh2 = new THREE.Mesh( geometry, material );
+      mesh2.material.side = THREE.FrontSide; // back faces
+      mesh2.renderOrder = 1;
+
+      if(rot && rot.length > 0){
+        mesh2.rotateX(rot[0]);
+        mesh2.rotateY(rot[1]);
+        mesh2.rotateZ(rot[2]);
+      }
+      if(trans && trans.length > 0){
+        mesh2.translateX(trans[0]);
+        mesh2.translateY(trans[1]);
+        mesh2.translateZ(trans[2]);
+      }
+      group.add(mesh2);
+
+      return group;
+    }
+
+    /* Function to create the rocking foot model */
+    function create_foot(ankle, num_points) {
+      /* To calculate Z-position */
+      let compute_z = function(x,y){return Math.sqrt(Rf*Rf-x*x) - Rf + Math.sqrt(Rs*Rs-y*y) - Rs;};
+      /* Center of the foot */
+      let center = [-ankle[0], -ankle[1]+ d ];
+      /* Min/Max X point */
+      let minX = Rs * Math.sin(phi) + center[0],
+          maxX = Rs * Math.sin(-phi) + center[0],
+          /* Create the vertices from the theoretical angles */
+          points = [new Vec3(minX,0.0,compute_z(minX,0.0)), new Vec3(maxX,0.0,compute_z(maxX,0.0))];
+      for(let i = 0; i < num_points; i++){
+        let theta = -phi + (2.0*phi/num_points) * i;
+            theta = +theta.toFixed(4);
+            console.log(theta);
+        /* The last point occurs at phi */
+        if(theta === phi) break;
+        let x =  Rs * Math.sin(theta) + center[0],
+            y = -Rs * Math.cos(theta) + center[1];
+        /* Add the point to the list */
+        points.push(new Vec3(x,y,compute_z(x,y)));
+      }
+      /* Add the last two points */
+      let x = Rs*Math.sin(phi)+center[0], y =-Rs*Math.cos(phi)+center[1];
+      points.push(new Vec3(x,y,compute_z(x,y)));
+      points.push(new Vec3(minX,0.0,compute_z(minX,0.0)));
+      /* Clone the points to make the back have of the foot*/
+      let offset = new Vec3(0.0,0.0,3.25), result = new Vec3(0,0,0);
+      let len = points.length;
+      for(let j = 0; j < len; j++){
+        result.addVectors(points[j],offset);
+        points.push(_.clone(result));
+      }
+      return createConvex(points, "#ffffff")
+    }
+
     function passive_motion_ODE45(y){
       let solution = y;
       let theta_st = y[0],   theta_sw = y[1],
@@ -43,24 +126,24 @@ let Sagittal_Walker_3D = (function() {
 
       /* ODE: H(theta)*theta_p + C(theta, theta_p)*theta_P + G(theta) = 0 */
       let
-          H11 = I + m*b*b + m*d*d + 2.0*m*R*R - 2.0*m*R*(b+d)*Math.cos(theta_st-gamma),
-          H12 = m*(b-d)*(d*Math.cos(theta_st-theta_sw)-R*Math.cos(theta_sw-gamma)),
+          H11 = I + m*b*b + m*d*d + 2.0*m*Rs*Rs - 2.0*m*Rs*(b+d)*Math.cos(theta_st-gamma),
+          H12 = m*(b-d)*(d*Math.cos(theta_st-theta_sw)-Rs*Math.cos(theta_sw-gamma)),
           H22 = I + m*(b-d)*(b-d),
           H = math.matrix([[H11,H12],[H12,H22]]),
           det_H = math.det(H),
           H_inv = math.matrix([[H22/det_H,-H12/det_H],[-H12/det_H,H11/det_H]]);
       let
-          C11 = m*R*(b+d)*theta_st_p*Math.sin(theta_st-gamma)
+          C11 = m*Rs*(b+d)*theta_st_p*Math.sin(theta_st-gamma)
               + 0.5*m*d*(b-d) * theta_sw_p*Math.sin(theta_st-theta_sw),
           C12 = m*(b-d) * (d*Math.sin(theta_st-theta_sw) * (theta_sw_p-0.5*theta_st_p)
-              + R*Math.sin(theta_sw-gamma)*theta_sw_p),
+              + Rs*Math.sin(theta_sw-gamma)*theta_sw_p),
           C21 = m*(b-d) * (d*Math.sin(theta_st-theta_sw) * (theta_st_p-0.5*theta_sw_p)
-              - 0.5*R* Math.sin(theta_sw-gamma) * theta_sw_p),
+              - 0.5*Rs* Math.sin(theta_sw-gamma) * theta_sw_p),
           C22 = 0.5*m*(b-d) * theta_st_p * (d*Math.sin(theta_st-gamma)
-              + R*Math.sin(theta_sw-gamma)),
+              + Rs*Math.sin(theta_sw-gamma)),
           C   = math.matrix([[C11,C12],[C21,C22]]),
           nC  = math.multiply(C, -1.0);
-      let G = math.matrix([ m*g*((b+d)*Math.sin(theta_st) - 2.0*R*Math.sin(gamma)),
+      let G = math.matrix([ m*g*((b+d)*Math.sin(theta_st) - 2.0*Rs*Math.sin(gamma)),
                             m*g*((b-d)*Math.sin(theta_sw))]);
 
       /* Calculate the angular acceleration */
@@ -86,10 +169,10 @@ let Sagittal_Walker_3D = (function() {
     function Poincare_map(y){
 
       let Omega_m = [
-        2.0*b*d*Math.cos(y[1]-y[0])-(b+d)*R*Math.cos(y[1]-gamma) -
-          2.0*b*R*Math.cos(y[0]-gamma) + 2.0*R*R + b*b - b*d,
-        (b-d)*(b-R*Math.cos(y[1]-gamma)),
-        (b-d)*(b-R*Math.cos(y[1]-gamma)),
+        2.0*b*d*Math.cos(y[1]-y[0])-(b+d)*Rs*Math.cos(y[1]-gamma) -
+          2.0*b*Rs*Math.cos(y[0]-gamma) + 2.0*Rs*Rs + b*b - b*d,
+        (b-d)*(b-Rs*Math.cos(y[1]-gamma)),
+        (b-d)*(b-Rs*Math.cos(y[1]-gamma)),
         0
       ],
         oM = math.matrix([
@@ -98,11 +181,11 @@ let Sagittal_Walker_3D = (function() {
         ]);
 
       let Omega_p = [
-        (b-d)*(d*Math.cos(y[0]-y[1]) - R*Math.cos(y[0]-gamma)+(b-d)),
-        -R*(b-d)*Math.cos(y[0]-gamma) - R*(b+2.0*d) * Math.cos(y[1]-gamma) + d*d + 2.0*R*R +
-          R*b*Math.cos(y[1]+gamma) - b*b*Math.cos(2.0*y[1]) + d*(b-d)*Math.cos(y[0]-y[1]),
+        (b-d)*(d*Math.cos(y[0]-y[1]) - Rs*Math.cos(y[0]-gamma)+(b-d)),
+        -Rs*(b-d)*Math.cos(y[0]-gamma) - Rs*(b+2.0*d) * Math.cos(y[1]-gamma) + d*d + 2.0*Rs*Rs +
+          Rs*b*Math.cos(y[1]+gamma) - b*b*Math.cos(2.0*y[1]) + d*(b-d)*Math.cos(y[0]-y[1]),
         (b-d)*(b-d),
-        (b-d)*(d*Math.cos(y[0]-y[1]) - R*Math.cos(y[0]-gamma))
+        (b-d)*(d*Math.cos(y[0]-y[1]) - Rs*Math.cos(y[0]-gamma))
       ],
         oP = math.matrix([
           [Omega_p[0],Omega_p[1] ],
@@ -204,36 +287,19 @@ let Sagittal_Walker_3D = (function() {
 
     }
 
-    function initialize_walker_model(){
+    function initialize_walker_model(scene){
 
+      let ankle_position = [0.0, -11.5];
+      /* Construct the foot of the walker */
+      let foot_mesh = create_foot(ankle_position, 20);
 
-      return w;
+      scene.add(foot_mesh);
     }
 
-    function initialize_system(options) {
-    //   /* Calculate the initial for stable walking based on the papers equations */
-    //   // let w = initialize_walker_model();
-    //   // walker = _.clone(w);
-    //
-    //   Solver = IntegratorFactory(
-    //       [0.0, 0.0, 0.0, 0.0],
-    //       passive_motion_ODE45,
-    //       options.start_time,
-    //       step_size,
-    //       {
-    //         maxIncreaseFactor: options.maxIncreaseFactor,
-    //         maxDecreaseFactor: options.maxDecreaseFactor,
-    //         tol: 1e-5,
-    //         dtMaxMag: 1e-3,
-    //         dtMinMag: 1e-3,
-    //         errorScaleFunction: function( i, dt, y, dydt ) {
-    //           let scale = Math.abs(y) + Math.abs(dt * dydt);
-    //           scale += (scale === 0) ? 1e32 : 1e-32;
-    //           return scale;
-    //         }
-    //       });
+    function initialize_system(options, scene) {
+      /* Calculate the initial for stable walking based on the papers equations */
 
-      //return w;
+      let w = initialize_walker_model(scene);
     }
 
     return {

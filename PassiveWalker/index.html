@@ -14,8 +14,10 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/87/three.js"></script>
     <script type="text/javascript" src="../lib/js/dat.gui.js"></script>
     <script type="text/javascript" src="../lib/js/math.js"></script>
-    <script type="application/javascript" src="../utilities/OrbitControls.js"></script>
-    <script type="application/javascript" src="../lib/js/stats.min.js"></script>
+    <script src="../lib/js/QuickHull.js"></script>
+    <script src="../lib/js/ConvexGeometry.js"></script>
+    <script src="../lib/js/stats.min.js"></script>
+    <script src="../utilities/OrbitControls.js"></script>
 
     <script type="application/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/lodash.js/4.17.4/lodash.js"></script>
 
@@ -31,9 +33,8 @@
 
 <div class="container-fluid">
     <div class="row">
-        <div class="col-8">
-            <canvas id="canvas"
-                    width="1600" height="1200" style="border:1px solid #d3d3d3;"></canvas>
+        <div class="col-9">
+            <div id="container"></div>
         </div>
     </div>
 </div>
