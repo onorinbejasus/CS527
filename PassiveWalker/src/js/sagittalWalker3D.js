@@ -130,57 +130,76 @@ let Sagittal_Walker_3D = (function() {
       let stance_group = new THREE.Group();
 
       let leg = [
-        [0.625,0.75,1.7], [-0.625,ankle[1],1.5]
-        // [-0.625,0.625,0.625,-0.625],
-        // [0.75,-.75,ankle[1],ankle[1]],
-        // [1.5,1.7,1.7,1.5]
+        [0.625,0.75,1.7], [-0.625,ankle[1],1.5],
+        [0.625,0.75,0.5], [-0.625,-1.12500,1.7],
       ];
 
       /* Construct the two legs */
-      let swing_leg = [], stance_leg = [];
-
+      let points = [];
       for(let i = 0; i < leg.length; i++) {
-        let swP = math.add(hip,leg[i]),//math.multiply(leg[i],angles[0])),
-            stP = math.add(hip,leg[i]);//math.multiply(leg[i],angles[1]));
+        let swP = math.add(hip,leg[i]),
+            stP = math.add(hip,leg[i]);
 
         let swX = swP[0], swY = swP[1], swZ = swP[2];
         let stX = swP[0], stY = swP[1], stZ = stP[2];
 
-        swing_leg.push([swX,swY,swZ]);
-        stance_leg.push([stX,stY,stZ]);
-
+        points.push([swX,swY,swZ]);
       }
-      let width = swing_leg[0][0]-swing_leg[1][0],
-          height = swing_leg[0][1]-swing_leg[1][1],
-          depth = swing_leg[0][2]-swing_leg[1][2];
 
-      let material = new THREE.MeshBasicMaterial( {color: 0x00ff00} ),
-          swing_geometry = new THREE.BoxGeometry( width, height, depth ),
-          swing_mesh = new THREE.Mesh( swing_geometry, material ),
-          stance_geometry = new THREE.BoxGeometry( width, height, depth ),
-          stance_mesh = new THREE.Mesh( stance_geometry, material );
+      let width_leg  = points[0][0]-points[1][0],
+          height_leg = points[0][1]-points[1][1],
+          depth_leg  = points[0][2]-points[1][2],
+          width_chamber = points[2][0]-points[3][0],
+          height_chamber = points[2][1]-points[3][1],
+          depth_chamber = points[2][2]-points[3][2];
+
+      let material = new THREE.MeshLambertMaterial( {
+        color: "#00ff00",
+        opacity: 0.5,
+        transparent: true
+      } ),
+
+      chamber_geometry = new THREE.BoxGeometry( width_chamber, height_chamber, depth_chamber ),
+      chamber_mesh = new THREE.Mesh( chamber_geometry, material ),
+
+      swing_geometry = new THREE.BoxGeometry( width_leg, height_leg, depth_leg ),
+      swing_mesh = new THREE.Mesh( swing_geometry, material ),
+
+      stance_geometry = new THREE.BoxGeometry( width_leg, height_leg, depth_leg ),
+      stance_mesh = new THREE.Mesh( stance_geometry, material );
+
+      let ratio = height_chamber/height_leg;
 
       /* Offset the leg by the ankle position */
-      swing_mesh.translateZ(ankle[0]+(feet_dist-width)/2.0);
+      let swing_chamber =  chamber_mesh.clone(),
+          stance_chamber = chamber_mesh.clone();
+      swing_chamber.translateY(-ankle[1]-height_chamber*ratio);
+      swing_chamber.translateZ(ankle[0]+(feet_dist)/2.0+depth_chamber+depth_leg/2.0);
+
+      swing_mesh.translateZ(ankle[0]+(feet_dist-width_leg)/2.0);
       swing_mesh.translateY(-ankle[1]/2);
 
-      stance_mesh.translateZ(ankle[0]-(feet_dist-width)/2.0);
+      stance_chamber.translateY(-ankle[1]-height_chamber*ratio);
+      stance_chamber.translateZ(ankle[0]-(feet_dist)/2.0-depth_chamber-depth_leg/2.0);
+
+      stance_mesh.translateZ(ankle[0]-(feet_dist-width_leg)/2.0);
       stance_mesh.translateY(-ankle[1]/2);
 
       /* Add the legs to the group */
       stance_group.add(stance_mesh);
+      stance_group.add(stance_chamber);
       swing_group.add(swing_mesh);
+      swing_group.add(swing_chamber);
 
       /* Construct the foot of the walker */
       let sw_foot = create_foot(ankle, 30,feet_dist/2);
       let st_foot = create_foot(ankle, 30,-feet_dist/2);
 
-
       // Add the feet to the group
       stance_group.add(st_foot);
       swing_group.add(sw_foot);
 
-
+      /*Add the legs to a group */
       legs_groups.add(swing_group);
       legs_groups.add(stance_group);
 
