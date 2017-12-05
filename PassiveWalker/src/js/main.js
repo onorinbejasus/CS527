@@ -92,18 +92,19 @@ var App = App || {};
     renderer.setPixelRatio( window.devicePixelRatio );
     renderer.setSize( window.innerWidth, window.innerHeight );
     container.appendChild( renderer.domElement );
+    setAnimationIntervals(64, animate);
 
     /* start the application once the DOM is ready */
-    document.addEventListener('keydown', (event) => {
-      const keyName = event.key;
-
-      if (keyName === 'a') {
-        console.log("start");
-        /* Begin animation */
-        setAnimationIntervals(64, animate);
-      }
-
-    }, false);
+    // document.addEventListener('keydown', (event) => {
+    //   const keyName = event.key;
+    //
+    //   if (keyName === 'a') {
+    //     console.log("start");
+    //     /* Begin animation */
+    //     setAnimationIntervals(64, animate);
+    //   }
+    //
+    // }, false);
   }
 
   document.addEventListener('DOMContentLoaded', initialize);
