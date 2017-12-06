@@ -8,6 +8,8 @@ Final Project
 
 var App = App || {};
 App.hip_pos = [];
+App.angles = [];
+
 let Sagittal_Walker_3D = (function() {
 
   return function(global_options) {
@@ -41,7 +43,7 @@ let Sagittal_Walker_3D = (function() {
         last_collision_t = 0,
         step_period = -1,
         prev_hip = -1, delta = [0][0], initial_pos = -1,
-        direction = 0;
+        direction = 0, rotated = 0, axel_quat;
 
     function getClosest(array, target) {
       var tuples = _.map(array, function(val) {
@@ -65,6 +67,26 @@ let Sagittal_Walker_3D = (function() {
     }
 
     let degToRad = (a) => {return a * 0.0174533};
+
+    App.rotateAxis = function(theta,phi) {
+      let axel = App.scene.getObjectByName("axel");
+
+      /* Save the original transformations */
+      let axel_pos  = _.clone(axel.position),
+          angles = App.angles.slice(-1)[0],
+          theta_rot = new THREE.Quaternion().setFromEuler(new THREE.Euler(0, theta-gamma, 0), 'XYZ'),
+          phi_rot   = new THREE.Quaternion().setFromEuler(new THREE.Euler(0, phi-gamma, 0), 'XYZ');
+
+      let q = _.clone(axel_quat);
+      q.multiply(theta_rot);
+      q.multiply(phi_rot);
+
+      axel.position.set(0,0,0);
+      axel.quaternion.set(q.x,q.y,q.z,q.w);
+      // axel.quaternion.multiply(phi_rot);
+      axel.position.set(axel_pos.x,axel_pos.y,axel_pos.z);
+
+    };
 
     /* To calculate Z-position */
     let compute_z = function(x,y){return Math.sqrt(Rf*Rf-x*x) - Rf + Math.sqrt(Rs*Rs-y*y) - Rs;};
@@ -272,7 +294,6 @@ let Sagittal_Walker_3D = (function() {
       if(prev_hip === -1) return hip;
       /* Check the delta change to determine how to proceed */
       if(prev_hip[0][0] > hip[0][0]) {
-        console.log(prev_hip[0][0]);
         /* Find the x position closest to our step*/
         let xs  = getCol(App.hip_pos,0),
             closest = getClosest(xs, hip[0][0]),
@@ -312,6 +333,8 @@ let Sagittal_Walker_3D = (function() {
 
       /* Create the axel that connects the legs */
       let axel = create_axel(hip,0.25,feet_distance,ankle);
+
+      axel_quat = _.clone(axel.quaternion);
 
       /* Create the legs and feet */
       hip = [hip[0][0],hip[1][0],hip[0][0]/2];
@@ -425,11 +448,6 @@ let Sagittal_Walker_3D = (function() {
 
       App.hip_pos.push([hip[0][0],hip[1][0]]);
 
-      // if(hip_pos.length > 10) {
-      //   debug = true;
-      // }
-      //
-
       swing.translateY(-ankle[1]);
       swing.setRotationFromEuler(new THREE.Euler(0,0,theta,"XYZ"));
       swing.translateY(ankle[1]);
@@ -441,6 +459,9 @@ let Sagittal_Walker_3D = (function() {
       axel.position.setX(hip[0][0]);
       axel.position.setY(hip[1][0]);
 
+      /* Apply the rotation to the axel*/
+      rotated += 1;
+      App.rotateAxis((!sW_foot)?theta:phi, (!sW_foot)?phi:theta);
     }
 
     function walk(time) {
@@ -499,8 +520,8 @@ let Sagittal_Walker_3D = (function() {
         //   App.walk = false;
         // }
       }
-
       // App.walk = false;
+      App.angles.push([dydt[0],dydt[1]]);
       update_walker(dydt[0],dydt[1]);
     }
 

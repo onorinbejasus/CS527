@@ -17,12 +17,9 @@ var App = App || {};
   App.walk = false;
 
   /* Walker variables */
-  let walker, slope = -0.1, IC, rotation = 0;
+  let walker, slope = -0.1, IC, rotationX = 0, rotationY = 0;
 
   function create_ramp(slope) {
-
-    console.log(10.0/Math.tan(slope));
-
     let A = new THREE.Vector2( -2, 0 );
     let B = new THREE.Vector2( -2, 10 );
     let C = new THREE.Vector2( 10/Math.tan(slope),0 );
@@ -31,10 +28,12 @@ var App = App || {};
     let geometry = new App.PrismGeometry( [ A, B, C ], height );
     geometry.scale(1.0,1.0,1.5);
 
-    let material = new THREE.MeshPhongMaterial( { color: 0x00b2fc, specular: 0x00ffff, shininess: 20 } );
-
+    let material = new THREE.MeshLambertMaterial( {
+          color: 0x8c510a,
+          opacity: 0.75,
+          transparent: true
+        } );
     let prism1 = new THREE.Mesh( geometry, material );
-    let axel = App.scene.getObjectByName("axel");
 
     prism1.translateY(-10);
     prism1.translateZ(-prism1.geometry.vertices[5].z/2.0);
@@ -125,18 +124,16 @@ var App = App || {};
     document.addEventListener('keydown', (event) => {
       const keyName = event.key;
       if (keyName === 'a') {
-        rotation -= 1;
-        walker.update(rotation);
-        console.log(keyName);
+        rotationX -= (3 * 0.0174533);
+        walker.update([rotationX,rotationY]);
       }
       else if (keyName === 's') {
-        rotation += 1;
-        walker.update(rotation);
+        rotationY -= (3 * 0.0174533);
+        walker.update([rotationX,rotationY]);
       }
       else if(keyName === 'r') {
         previous_time = calculate_then = Date.now();
         App.walk = !App.walk;
-        console.log(App.hip_pos);
       }
 
     }, false);
