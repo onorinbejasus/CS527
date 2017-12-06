@@ -33,7 +33,6 @@ let Sagittal_Walker_3D = (function() {
         sW_foot       = false,
         debug         = false;
 
-
     let Solver = null;
     /* Closure variable to track internal states */
     let walker = {},
@@ -41,7 +40,25 @@ let Sagittal_Walker_3D = (function() {
         collision_found = false,
         last_collision_t = 0,
         step_period = -1,
-        prev_hip = -1;
+        prev_hip = -1, delta = [0][0], initial_pos = -1,
+        direction = 0;
+
+    function getClosest(array, target) {
+      var tuples = _.map(array, function(val) {
+        return [val, Math.abs(val - target)];
+      });
+      return _.reduce(tuples, function(memo, val) {
+        return (memo[1] < val[1]) ? memo : val;
+      }, [-1, 999])[0];
+    }
+
+     function getCol(matrix, col){
+      var column = [];
+      for(var i=0; i<matrix.length; i++){
+        column.push(matrix[i][col]);
+      }
+      return column;
+    }
 
     function rotate(angle) {
       return [[Math.cos(angle), -Math.sin(angle)], [Math.sin(angle), Math.cos(angle)]];
@@ -241,48 +258,43 @@ let Sagittal_Walker_3D = (function() {
 
     function get_hip(angular_disp) {
       // let group = new THREE.Group();
-      let theta_rot = rotate(angular_disp[0]),
-          phi_rot = rotate(angular_disp[1]);
+      let angle = angular_disp[0];
 
-      let alpha = Math.max(Math.min(angular_disp[0]-gamma,phi),-phi),
+      if(Math.min(angular_disp[0]-gamma,phi) === phi){
+        angle = angular_disp[1];
+      }
+      let alpha = Math.max(Math.min(angle-gamma,phi),-phi),
           gc = math.multiply(rotate(gamma),[[-Rs*alpha],[0]]),
-          center = math.add(gc, math.multiply(rotate(angular_disp[0]-alpha), [[0],[Rs]])),
-          hip = math.subtract(center, math.multiply(theta_rot, [[0],[d]]));
+          center = math.add(gc, math.multiply(rotate(angle-alpha), [[0],[Rs]])),
+          hip = math.subtract(center, math.multiply(rotate(angle), [[0],[d]]));
 
-      // if(prev_hip !== -1){
-      //   //+hip[0][0].toFixed(3) !== +prev_hip[0][0].toFixed(3)
-      //   if(hip[0][0] < prev_hip[0][0] || hip[1][0] > prev_hip[1][0]) {
-      //     console.log("before", hip[0][0]);
-      //
-      //     let diff_x = prev_hip[0][0] - hip[0][0],
-      //         diff_y = prev_hip[1][0] - hip[1][0];
-      //
-      //     hip[0][0] = prev_hip[0][0] + diff_x;
-      //     hip[1][0] = prev_hip[1][0] + diff_y;
-      //
-      //     console.log(diff_x, diff_y);
-      //
-      //     console.log();
-      //     //
-      //     // gc = math.multiply(rotate(gamma),[[-Rs*other_alpha],[0]]);
-      //     // center = math.add(gc,math.multiply(rotate(other_theta-other_alpha), [[0],[Rs]]));
-      //     // hip = math.subtract(center, math.multiply(phi_rot, [[0],[d]]));
-      //     // if(hip[0][0] < prev_hip[0][0] && hip[1][0] > prev_hip[1][0]){
-      //     //
-      //     //
-      //     //   let diff_x = prev_hip[0][0] - hip[0][0],
-      //     //       diff_y = prev_hip[1][0] - hip[1][0];
-      //     //
-      //     //   hip[0][0] = prev_hip[0][0] + diff_x;
-      //     //   hip[1][0] = prev_hip[1][0] + diff_y;
-      //     //
-      //     //   console.log();
-      //     //
-      //     // }
-      //   }
-      // }
-      //
-      // prev_hip = hip;
+      /* First calculation */
+      if(prev_hip === -1) return hip;
+      /* Check the delta change to determine how to proceed */
+      if(prev_hip[0][0] > hip[0][0]) {
+        console.log(prev_hip[0][0]);
+        /* Find the x position closest to our step*/
+        let xs  = getCol(App.hip_pos,0),
+            closest = getClosest(xs, hip[0][0]),
+            idx = xs.indexOf(closest);
+        /* Get the closest previous value */
+        if(closest > hip[0][0]) idx = Math.max(--idx,0);
+        let closest_point = App.hip_pos[idx];
+        prev_hip = [ [closest_point[0]],[closest_point[1]] ]
+      }
+
+      let del = math.subtract(hip,prev_hip);
+
+      if(direction !== 0 && Math.sign(del[0][0]) !== direction){
+        del = math.multiply(del,-direction);
+      }
+
+      /* Calculate and store the total progression forward */
+      delta = math.add(delta,del);
+
+      hip = math.add(delta, initial_pos);
+      direction = Math.sign(hip[0][0] - prev_hip[0][0]);
+      prev_hip = hip;
 
       return hip;
     }
@@ -292,7 +304,7 @@ let Sagittal_Walker_3D = (function() {
           // sw_gc = math.add(sw_center, math.multiply(rotate(angular_disp[1]-sw_alpha), [[0],[-Rs]]));
 
       let hip = get_hip(angular_disp);
-      prev_hip = hip;
+      initial_pos = prev_hip = hip;
       App.hip_pos.push([hip[0][0],hip[1][0]]);
 
       ankle = [0.0,-11.5];
@@ -417,9 +429,6 @@ let Sagittal_Walker_3D = (function() {
       //   debug = true;
       // }
       //
-      // axel.position.setX(hip[0][0]);
-      // axel.position.setY(hip[1][0]);
-
 
       swing.translateY(-ankle[1]);
       swing.setRotationFromEuler(new THREE.Euler(0,0,theta,"XYZ"));
@@ -428,6 +437,10 @@ let Sagittal_Walker_3D = (function() {
       stance.translateY(-ankle[1]);
       stance.setRotationFromEuler(new THREE.Euler(0,0,phi,"XYZ"));
       stance.translateY(ankle[1]);
+
+      axel.position.setX(hip[0][0]);
+      axel.position.setY(hip[1][0]);
+
     }
 
     function walk(time) {
@@ -472,7 +485,7 @@ let Sagittal_Walker_3D = (function() {
 
           sW_foot = !sW_foot;
 
-          //console.log("collision");
+          // console.log("collision");
 
           /* Push the new solution onto the list*/
           y.push(dydt);
