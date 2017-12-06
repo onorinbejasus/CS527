@@ -14,11 +14,12 @@ var App = App || {};
   let previous_time, calculate_then, total_elapsed = 0,
     animation_count = 0, interval, controls;
   let container, stats, camera,renderer;
+  App.walk = false;
 
   /* Walker variables */
-  let walker, slope = -0.1, IC;
+  let walker, slope = -0.1, IC, rotation = 0;
 
-  function render_ramp() {
+  function create_ramp() {
 
   }
 
@@ -31,24 +32,30 @@ var App = App || {};
     // request another frame
     requestAnimationFrame(animate);
 
-    // calculate elapsed time since last loop
-    let now = Date.now(),
-        elapsed = now - previous_time;
-    total_elapsed += elapsed;
-    // Get ready for next frame by setting then=now, but...
-    previous_time = now - (elapsed % interval);
+    if(App.walk){
+      // calculate elapsed time since last loop
+      let now = Date.now(),
+          elapsed = now - previous_time;
+      total_elapsed += elapsed;
+      // Get ready for next frame by setting then=now, but...
+      previous_time = now - (elapsed % interval);
 
-    // if enough time has elapsed, draw the next frame
-    if (elapsed > interval) {
-      animation_count++;
+      // if enough time has elapsed, draw the next frame
+      if (elapsed > interval) {
+        animation_count++;
 
-      /* Move the walker forward in the App.scene */
-      //walker.walk(total_elapsed/1e3 + Number.EPSILON);
+        /* Move the walker forward in the App.scene */
+        walker.walk(total_elapsed/1e3 + Number.EPSILON);
+      }
 
-      /* Render the App.scene */
-      render();
+      if(total_elapsed/1e3 > 10){
+        App.walk = false;
+      }
+
     }
 
+    /* Render the scene */
+    render();
   }
 
   /* Start animating at a certain fps */
@@ -64,7 +71,7 @@ var App = App || {};
 
     /* Create the camera and set it's position */
     camera = new THREE.PerspectiveCamera( 27, window.innerWidth / window.innerHeight, 5, 3500 );
-    camera.position.z = 100;
+    camera.position.z = 150;
     /* Create the App.scene */
     App.scene = new THREE.Scene();
     App.scene.background = new THREE.Color( 0x050505 );
@@ -95,16 +102,23 @@ var App = App || {};
     setAnimationIntervals(64, animate);
 
     /* start the application once the DOM is ready */
-    // document.addEventListener('keydown', (event) => {
-    //   const keyName = event.key;
-    //
-    //   if (keyName === 'a') {
-    //     console.log("start");
-    //     /* Begin animation */
-    //     setAnimationIntervals(64, animate);
-    //   }
-    //
-    // }, false);
+    document.addEventListener('keydown', (event) => {
+      const keyName = event.key;
+      if (keyName === 'a') {
+        rotation -= 1;
+        walker.update(rotation);
+        console.log(keyName);
+      }
+      else if (keyName === 's') {
+        rotation += 1;
+        walker.update(rotation);
+      }
+      else if(keyName === 'r') {
+        previous_time = calculate_then = Date.now();
+        App.walk = !App.walk;
+      }
+
+    }, false);
   }
 
   document.addEventListener('DOMContentLoaded', initialize);

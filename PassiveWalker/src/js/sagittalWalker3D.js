@@ -24,10 +24,16 @@ let Sagittal_Walker_3D = (function() {
         g         = 386.088,
         phi       = 0.23, // angle between the axel center and foot
         step_size = global_options.step_size,
-        Vec3 = THREE.Vector3;
+        Vec3 = THREE.Vector3,
+        Mat4 = THREE.Matrix4;
 
     let internal_time = 0,
-        dydt = [0.0, 0.0, 0.0, 0.0];
+        dydt          = [0.0, 0.0, 0.0, 0.0],
+        ankle         = [],
+        hip_pos       = [],
+        sW_foot       = false,
+        debug         = false;
+
 
     let Solver = null;
     /* Closure variable to track internal states */
@@ -35,11 +41,14 @@ let Sagittal_Walker_3D = (function() {
         steps = 0,
         collision_found = false,
         last_collision_t = 0,
-        step_period = -1;
+        step_period = -1,
+        prev_hip = -1;
 
     function rotate(angle) {
       return [[Math.cos(angle), -Math.sin(angle)], [Math.sin(angle), Math.cos(angle)]];
     }
+
+    let degToRad = (a) => {return a * 0.0174533};
 
     /* To calculate Z-position */
     let compute_z = function(x,y){return Math.sqrt(Rf*Rf-x*x) - Rf + Math.sqrt(Rs*Rs-y*y) - Rs;};
@@ -95,7 +104,7 @@ let Sagittal_Walker_3D = (function() {
       let center = [-ankle[0], -ankle[1]+ d ];
       /* Min/Max X point */
       let minX = Rs * Math.sin(phi) + center[0],
-        maxX = Rs * Math.sin(-phi) + center[0],
+          maxX = Rs * Math.sin(-phi) + center[0],
         /* Create the vertices from the theoretical angles */
         points = [new Vec3(minX,0.0,compute_z(minX,0.0)), new Vec3(maxX,0.0,compute_z(maxX,0.0))];
       for(let i = 0; i < num_points; i++){
@@ -104,7 +113,7 @@ let Sagittal_Walker_3D = (function() {
         /* The last point occurs at phi */
         if(theta === phi) break;
         let x =  Rs * Math.sin(theta) + center[0],
-          y = -Rs * Math.cos(theta) + center[1];
+          y   = -Rs * Math.cos(theta) + center[1];
         /* Add the point to the list */
         points.push(new Vec3(x,y,compute_z(x,y)));
       }
@@ -172,14 +181,14 @@ let Sagittal_Walker_3D = (function() {
       swing_chamber.translateY(-ankle[1]-height_chamber*ratio);
       swing_chamber.translateZ(ankle[0]+(feet_dist)/2.0+depth_chamber+depth_leg/2.0);
 
-      swing_mesh.translateZ(ankle[0]+(feet_dist-width_leg)/2.0);
-      swing_mesh.translateY(-ankle[1]/2);
+      swing_mesh.position.setZ(ankle[0]+(feet_dist-width_leg)/2.0);
+      swing_mesh.position.setY(-ankle[1]/2);
 
       stance_chamber.translateY(-ankle[1]-height_chamber*ratio);
       stance_chamber.translateZ(ankle[0]-(feet_dist)/2.0-depth_chamber-depth_leg/2.0);
 
-      stance_mesh.translateZ(ankle[0]-(feet_dist-width_leg)/2.0);
-      stance_mesh.translateY(-ankle[1]/2);
+      stance_mesh.position.setZ((ankle[0]-(feet_dist-width_leg)/2.0));
+      stance_mesh.position.setY(-ankle[1]/2);
 
       /* Add the legs to the group */
       stance_group.add(stance_mesh);
@@ -198,6 +207,10 @@ let Sagittal_Walker_3D = (function() {
       /*Add the legs to a group */
       swing_group.name = "swing_leg";
       stance_group.name = "stance_leg";
+
+      legs_groups.rotateX(degToRad(270));
+      legs_groups.translateY(ankle[1]);
+
       legs_groups.add(swing_group);
       legs_groups.add(stance_group);
 
@@ -205,10 +218,10 @@ let Sagittal_Walker_3D = (function() {
     }
 
     function create_axel(hip,r,feet_dist,ankle) {
-      let axel_points = [];
-      for(let i = 0; i < 2.0*Math.PI; i+=0.1){
-        axel_points.push([r*Math.sin(i)+hip[0][0], r*Math.cos(i)+hip[1][0]]);
-      }
+      // let axel_points = [];
+      // for(let i = 0; i < 2.0*Math.PI; i+=0.1){
+      //   axel_points.push([r*Math.sin(i)+hip[0][0], r*Math.cos(i)+hip[1][0]]);
+      // }
 
       let material = new THREE.MeshLambertMaterial( {
         color: "#0000ff",
@@ -217,37 +230,76 @@ let Sagittal_Walker_3D = (function() {
       } );
       let axel_geometry = new THREE.CylinderGeometry( r, r, feet_dist, 32 ),
           axel_mesh = new THREE.Mesh( axel_geometry, material );
-      axel_mesh.translateY(-ankle[1]);
+
+      axel_mesh.name = "axel";
+
+      axel_mesh.translateX(hip[0]);
+      axel_mesh.translateY(hip[1]);
       axel_mesh.rotateX(90.0*0.0174533);
 
       return axel_mesh;
     }
 
-    function create_body(angular_disp) {
+    function get_hip(angular_disp) {
+      // let group = new THREE.Group();
+      let theta_rot = rotate(angular_disp[0]),
+          phi_rot = rotate(angular_disp[1]);
 
-      let group = new THREE.Group();
-      let theta_rot = rotate(angular_disp[0]), phi_rot = rotate(angular_disp[1]);
-      let st_alpha   = Math.max(Math.min(angular_disp[0]-gamma,phi),-phi),
+      let theta = (!sW_foot)?angular_disp[0]:angular_disp[1],
+          other_theta = (!sW_foot)?angular_disp[1]:angular_disp[0];
+
+      let st_alpha = Math.max(Math.min(angular_disp[0]-gamma,phi),-phi),
           sw_alpha = Math.max(Math.min(angular_disp[1]-gamma,phi),-phi),
-          gc = math.multiply(rotate(gamma),[[-Rs*st_alpha],[0]]),
-          center = math.add(gc,math.multiply(rotate(angular_disp[0]-sw_alpha), [[0],[Rs]])),
-          hip = math.subtract(center, math.multiply(theta_rot, [[0],[d]])),
-          sw_center = math.add(hip, math.multiply(phi_rot, [[0],[d]])),
-          sw_gc = math.add(sw_center, math.multiply(rotate(angular_disp[1]-sw_alpha), [[0],[-Rs]]));
+          alpha =  (!sW_foot)?st_alpha:sw_alpha,
+          other_alpha = (sW_foot)?st_alpha:sw_alpha,
+          gc = math.multiply(rotate(gamma),[[-Rs*alpha],[0]]),
+          center = math.add(gc,math.multiply(rotate(theta-alpha), [[0],[Rs]])),
+          hip = math.subtract(center, math.multiply(theta_rot, [[0],[d]]));
 
-      let ankle_position = [0.0,-11.5], feet_distance = 6;
+      if(prev_hip !== -1){
+        //+hip[0][0].toFixed(3) !== +prev_hip[0][0].toFixed(3)
+        if(hip[0][0] < prev_hip[0][0] || hip[1][0] > prev_hip[1][0]) {
+          console.log("before", hip[0][0]);
+              // gc = math.multiply(rotate(gamma),[[-Rs*alpha],[0]]);
+              // center = math.add(gc,math.multiply(rotate(theta-alpha), [[0],[Rs]]));
+              // hip = math.subtract(center, math.multiply(theta_rot, [[0],[d]]));
+          gc = math.multiply(rotate(gamma),[[-Rs*other_alpha],[0]]);
+          center = math.add(gc,math.multiply(rotate(other_theta-other_alpha), [[0],[Rs]]));
+          hip = math.subtract(center, math.multiply(phi_rot, [[0],[d]]));
+          if(hip[0][0] < prev_hip[0][0] && hip[1][0] > prev_hip[1][0]){
+            sW_foot = false;
+          }
+        }
+      }
+      //
+      prev_hip = hip;
+
+      return hip;
+    }
+
+    function create_body(angular_disp) {
+          // sw_center = math.add(hip, math.multiply(phi_rot, [[0],[d]])),
+          // sw_gc = math.add(sw_center, math.multiply(rotate(angular_disp[1]-sw_alpha), [[0],[-Rs]]));
+
+      let hip = get_hip(angular_disp);
+      prev_hip = hip;
+      hip_pos.push([hip[0][0],hip[1][0]]);
+
+      ankle = [0.0,-11.5];
+      let feet_distance = 6;
 
       /* Create the axel that connects the legs */
-      let axel = create_axel(hip,0.25,feet_distance,ankle_position);
-      group.add(axel);
+      let axel = create_axel(hip,0.25,feet_distance,ankle);
 
       /* Create the legs and feet */
       hip = [hip[0][0],hip[1][0],hip[0][0]/2];
-      let legs = create_legs(ankle_position,hip, feet_distance);
-      group.add(legs);
+      let legs = create_legs(ankle,hip, feet_distance);
+      axel.add(legs);
 
-      return group;
+      return axel;
     }
+
+    /* Motion and rendering  */
 
     function passive_motion_ODE45(y){
       let solution = y;
@@ -290,11 +342,6 @@ let Sagittal_Walker_3D = (function() {
       solution[3] = y[3] + theta_dp._data[1]* step_size;
 
       return solution;
-
-      // dydt[0] = theta_st_p * 1; dydt[0] = +dydt[0].toFixed(5);
-      // dydt[1] = theta_sw_p* 1; dydt[1] = +dydt[1].toFixed(5);
-      // dydt[2] = theta_dp._data[0]* 1; dydt[2] = +dydt[2].toFixed(5);
-      // dydt[3] = theta_dp._data[1]* 1; dydt[3] = +dydt[3].toFixed(5);
     }
 
     function Poincare_map(y){
@@ -341,12 +388,38 @@ let Sagittal_Walker_3D = (function() {
     function collision_check(theta, phi) {
       let collision = Math.abs(+theta.toFixed(4)) - Math.abs(2.0 * +phi.toFixed(4));
           collision = +(collision.toFixed(4));
-
       return !Math.abs(collision);
     }
 
     function update_walker(theta, phi){
+      let swing = (!sW_foot) ? App.scene.getObjectByName("swing_leg") : App.scene.getObjectByName("stance_leg");
+      let stance = (sW_foot) ? App.scene.getObjectByName("stance_leg") : App.scene.getObjectByName("swing_leg");
+      let axel = App.scene.getObjectByName("axel");
+      //let rot = new THREE.Quaternion().setFromEuler(new THREE.Euler(0, 0, degToRad(theta)), 'XYZ');
 
+      //let hip = get_hip(
+          //[theta,phi]);
+          //(!sW_foot)?[theta,phi]:[phi,theta]);
+
+      //hip_pos.push([hip[0][0],hip[1][0]]);
+
+      // if(hip_pos.length > 10) {
+      //   debug = true;
+      // }
+
+      // axel.position.setX(hip[0][0]);
+      // axel.position.setY(hip[1][0]);
+
+      // axel.translateX(hip[0][0]);
+      // axel.translateY(hip[1][0]);
+
+      swing.translateY(-ankle[1]);
+      swing.setRotationFromEuler(new THREE.Euler(0,0,theta,"XYZ"));
+      swing.translateY(ankle[1]);
+
+      stance.translateY(-ankle[1]);
+      stance.setRotationFromEuler(new THREE.Euler(0,0,phi,"XYZ"));
+      stance.translateY(ankle[1]);
     }
 
     function walk(time) {
@@ -358,8 +431,6 @@ let Sagittal_Walker_3D = (function() {
         dydt = passive_motion_ODE45(dydt);
 
         y.push(_.clone(dydt));
-
-        // console.log(internal_time);
 
         /* On collision, apply the Poincare map and update the walker */
         if(step_period < 0){ // no gait determined yet, use the angles
@@ -381,24 +452,34 @@ let Sagittal_Walker_3D = (function() {
         if(collision_found){
           let previous = y.pop();
 
+          update_walker(dydt[0],dydt[1]);
+
           /* Reverse the leg angles based on the impulse */
           dydt[0] = previous[1];
           dydt[1] = previous[0];
           dydt[2] = omega[1];
           dydt[3] = omega[0];
 
+          sW_foot = !sW_foot;
+          update_walker(dydt[0],dydt[1]);
+
+          console.log("collision");
+
           /* Push the new solution onto the list*/
           y.push(dydt);
 
           collision_found = false;
-          console.log(dydt);
         }
-
-
         internal_time += step_size;
         steps++;
-
+        // if(steps > 600){
+        //   console.log(hip_pos);
+        //   App.walk = false;
+        // }
       }
+
+      // App.walk = false;
+      update_walker(dydt[0],dydt[1]);
 
       // let current = y.slice(-1)[0];
       // console.log(t.slice(-1)[0]);
@@ -409,11 +490,8 @@ let Sagittal_Walker_3D = (function() {
 
     }
 
-
     function initialize_walker_model(scene){
-
-      let hip = create_body([Math.asin(3.5/Rf),0]);
-
+      let hip = create_body([0,0]);
       scene.add(hip);
     }
 
@@ -426,6 +504,7 @@ let Sagittal_Walker_3D = (function() {
     return {
       initialize: initialize_system,
       walk: walk,
+      update: update_walker
     }
   }
 })();
