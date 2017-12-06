@@ -23,18 +23,21 @@ var App = App || {};
 
     console.log(10.0/Math.tan(slope));
 
-    let A = new THREE.Vector2( 0, 0 );
-    let B = new THREE.Vector2( 0, 10 );
+    let A = new THREE.Vector2( -2, 0 );
+    let B = new THREE.Vector2( -2, 10 );
     let C = new THREE.Vector2( 10/Math.tan(slope),0 );
 
     let height = 10;
     let geometry = new App.PrismGeometry( [ A, B, C ], height );
+    geometry.scale(1.0,1.0,1.5);
 
     let material = new THREE.MeshPhongMaterial( { color: 0x00b2fc, specular: 0x00ffff, shininess: 20 } );
 
     let prism1 = new THREE.Mesh( geometry, material );
-    //prism1.rotation.x = -Math.PI  /  2;
+    let axel = App.scene.getObjectByName("axel");
 
+    prism1.translateY(-10);
+    prism1.translateZ(-prism1.geometry.vertices[5].z/2.0);
     App.scene.add( prism1 );
   }
 
@@ -102,14 +105,15 @@ var App = App || {};
 
     /* Initialize the walker */
     walker = new Sagittal_Walker_3D({gamma: slope, step_size:1e-3});
-    create_ramp(Math.sign(slope)*slope);
 
     /* get the initial conditions (ICs) */
-    // IC = walker.initialize({
-    //   start_time: 0,
-    //   maxIncreaseFactor: 2,
-    //   maxDecreaseFactor: 4
-    // }, App.scene);
+    IC = walker.initialize({
+      start_time: 0,
+      maxIncreaseFactor: 2,
+      maxDecreaseFactor: 4
+    }, App.scene);
+
+    create_ramp(Math.sign(slope)*slope);
 
     renderer = new THREE.WebGLRenderer( { antialias: true } );
     renderer.setPixelRatio( window.devicePixelRatio );
