@@ -116,6 +116,7 @@ var App = App || {};
       else if(keyName === 'r') {
         previous_time = calculate_then = Date.now();
         App.walk = !App.walk;
+        console.log(App.hip_pos);
       }
 
     }, false);

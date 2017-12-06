@@ -7,7 +7,7 @@ Final Project
 "use strict";
 
 var App = App || {};
-
+App.hip_pos = [];
 let Sagittal_Walker_3D = (function() {
 
   return function(global_options) {
@@ -30,7 +30,6 @@ let Sagittal_Walker_3D = (function() {
     let internal_time = 0,
         dydt          = [0.0, 0.0, 0.0, 0.0],
         ankle         = [],
-        hip_pos       = [],
         sW_foot       = false,
         debug         = false;
 
@@ -245,34 +244,45 @@ let Sagittal_Walker_3D = (function() {
       let theta_rot = rotate(angular_disp[0]),
           phi_rot = rotate(angular_disp[1]);
 
-      let theta = (!sW_foot)?angular_disp[0]:angular_disp[1],
-          other_theta = (!sW_foot)?angular_disp[1]:angular_disp[0];
-
-      let st_alpha = Math.max(Math.min(angular_disp[0]-gamma,phi),-phi),
-          sw_alpha = Math.max(Math.min(angular_disp[1]-gamma,phi),-phi),
-          alpha =  (!sW_foot)?st_alpha:sw_alpha,
-          other_alpha = (sW_foot)?st_alpha:sw_alpha,
+      let alpha = Math.max(Math.min(angular_disp[0]-gamma,phi),-phi),
           gc = math.multiply(rotate(gamma),[[-Rs*alpha],[0]]),
-          center = math.add(gc,math.multiply(rotate(theta-alpha), [[0],[Rs]])),
+          center = math.add(gc, math.multiply(rotate(angular_disp[0]-alpha), [[0],[Rs]])),
           hip = math.subtract(center, math.multiply(theta_rot, [[0],[d]]));
 
-      if(prev_hip !== -1){
-        //+hip[0][0].toFixed(3) !== +prev_hip[0][0].toFixed(3)
-        if(hip[0][0] < prev_hip[0][0] || hip[1][0] > prev_hip[1][0]) {
-          console.log("before", hip[0][0]);
-              // gc = math.multiply(rotate(gamma),[[-Rs*alpha],[0]]);
-              // center = math.add(gc,math.multiply(rotate(theta-alpha), [[0],[Rs]]));
-              // hip = math.subtract(center, math.multiply(theta_rot, [[0],[d]]));
-          gc = math.multiply(rotate(gamma),[[-Rs*other_alpha],[0]]);
-          center = math.add(gc,math.multiply(rotate(other_theta-other_alpha), [[0],[Rs]]));
-          hip = math.subtract(center, math.multiply(phi_rot, [[0],[d]]));
-          if(hip[0][0] < prev_hip[0][0] && hip[1][0] > prev_hip[1][0]){
-            sW_foot = false;
-          }
-        }
-      }
+      // if(prev_hip !== -1){
+      //   //+hip[0][0].toFixed(3) !== +prev_hip[0][0].toFixed(3)
+      //   if(hip[0][0] < prev_hip[0][0] || hip[1][0] > prev_hip[1][0]) {
+      //     console.log("before", hip[0][0]);
       //
-      prev_hip = hip;
+      //     let diff_x = prev_hip[0][0] - hip[0][0],
+      //         diff_y = prev_hip[1][0] - hip[1][0];
+      //
+      //     hip[0][0] = prev_hip[0][0] + diff_x;
+      //     hip[1][0] = prev_hip[1][0] + diff_y;
+      //
+      //     console.log(diff_x, diff_y);
+      //
+      //     console.log();
+      //     //
+      //     // gc = math.multiply(rotate(gamma),[[-Rs*other_alpha],[0]]);
+      //     // center = math.add(gc,math.multiply(rotate(other_theta-other_alpha), [[0],[Rs]]));
+      //     // hip = math.subtract(center, math.multiply(phi_rot, [[0],[d]]));
+      //     // if(hip[0][0] < prev_hip[0][0] && hip[1][0] > prev_hip[1][0]){
+      //     //
+      //     //
+      //     //   let diff_x = prev_hip[0][0] - hip[0][0],
+      //     //       diff_y = prev_hip[1][0] - hip[1][0];
+      //     //
+      //     //   hip[0][0] = prev_hip[0][0] + diff_x;
+      //     //   hip[1][0] = prev_hip[1][0] + diff_y;
+      //     //
+      //     //   console.log();
+      //     //
+      //     // }
+      //   }
+      // }
+      //
+      // prev_hip = hip;
 
       return hip;
     }
@@ -283,7 +293,7 @@ let Sagittal_Walker_3D = (function() {
 
       let hip = get_hip(angular_disp);
       prev_hip = hip;
-      hip_pos.push([hip[0][0],hip[1][0]]);
+      App.hip_pos.push([hip[0][0],hip[1][0]]);
 
       ankle = [0.0,-11.5];
       let feet_distance = 6;
@@ -397,21 +407,19 @@ let Sagittal_Walker_3D = (function() {
       let axel = App.scene.getObjectByName("axel");
       //let rot = new THREE.Quaternion().setFromEuler(new THREE.Euler(0, 0, degToRad(theta)), 'XYZ');
 
-      //let hip = get_hip(
-          //[theta,phi]);
+      let hip = get_hip(
+          [theta,phi]);
           //(!sW_foot)?[theta,phi]:[phi,theta]);
 
-      //hip_pos.push([hip[0][0],hip[1][0]]);
+      App.hip_pos.push([hip[0][0],hip[1][0]]);
 
       // if(hip_pos.length > 10) {
       //   debug = true;
       // }
-
+      //
       // axel.position.setX(hip[0][0]);
       // axel.position.setY(hip[1][0]);
 
-      // axel.translateX(hip[0][0]);
-      // axel.translateY(hip[1][0]);
 
       swing.translateY(-ankle[1]);
       swing.setRotationFromEuler(new THREE.Euler(0,0,theta,"XYZ"));
@@ -452,7 +460,7 @@ let Sagittal_Walker_3D = (function() {
         if(collision_found){
           let previous = y.pop();
 
-          update_walker(dydt[0],dydt[1]);
+          //update_walker(dydt[0],dydt[1]);
 
           /* Reverse the leg angles based on the impulse */
           dydt[0] = previous[1];
@@ -460,10 +468,11 @@ let Sagittal_Walker_3D = (function() {
           dydt[2] = omega[1];
           dydt[3] = omega[0];
 
-          sW_foot = !sW_foot;
-          update_walker(dydt[0],dydt[1]);
+          //update_walker(dydt[0],dydt[1]);
 
-          console.log("collision");
+          sW_foot = !sW_foot;
+
+          //console.log("collision");
 
           /* Push the new solution onto the list*/
           y.push(dydt);
@@ -480,14 +489,6 @@ let Sagittal_Walker_3D = (function() {
 
       // App.walk = false;
       update_walker(dydt[0],dydt[1]);
-
-      // let current = y.slice(-1)[0];
-      // console.log(t.slice(-1)[0]);
-      // console.log(current[0], current[1], current[2], current[3]);
-
-      /* Update the walker's position */
-      //update_walker(current[0], current[2]);
-
     }
 
     function initialize_walker_model(scene){
